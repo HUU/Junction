@@ -1,4 +1,4 @@
-@username = jlhu@pm.me
+@username = {{$processEnv CONFLUENCE_API_USER}}
 @password = {{$processEnv CONFLUENCE_API_KEY}}
 @authorization = Basic {{username}} {{password}}
 
