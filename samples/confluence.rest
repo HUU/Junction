@@ -1,0 +1,7 @@
+@username = jlhu@pm.me
+@password = {{$processEnv CONFLUENCE_API_KEY}}
+@authorization = Basic {{username}} {{password}}
+
+###
+GET https://jihugh.atlassian.net/wiki/rest/api/content?spaceKey=NS&title=Sample%20Page&expand=body.editor
+Authorization: {{authorization}}
