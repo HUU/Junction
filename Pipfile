@@ -9,6 +9,10 @@ ipykernel = "*"
 [packages]
 requests = "*"
 markdown = "*"
+markdownsuperscript = "*"
+markdownsubscript = "*"
+markdown-urlize = "*"
+markdown-emdash = "*"
 
 [requires]
 python_version = "3.8"

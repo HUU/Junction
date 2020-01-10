@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "ccf95e138222f6e0e392d758919d37af40cdaa50d7bf427242fe906063b3f922"
+            "sha256": "58c4c3d397eee13d3814b31af4481088d64409641d83955c6e31b7c340dc9b8b"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -39,11 +39,41 @@
         },
         "markdown": {
             "hashes": [
-                "sha256:2e50876bcdd74517e7b71f3e7a76102050edec255b3983403f1a63e7c8a41e7a",
-                "sha256:56a46ac655704b91e5b7e6326ce43d5ef72411376588afa1dd90e881b83c7e8c"
+                "sha256:c00429bd503a47ec88d5e30a751e147dcb4c6889663cd3e2ba0afe858e009baa",
+                "sha256:d02e0f9b04c500cde6637c11ad7c72671f359b87b9fe924b2383649d8841db7c"
             ],
             "index": "pypi",
-            "version": "==3.1.1"
+            "version": "==3.0.1"
+        },
+        "markdown-emdash": {
+            "hashes": [
+                "sha256:cf07f94431277ae743e90d1204a4b354da2c312a408f7eef9733edb5e5edeb39"
+            ],
+            "index": "pypi",
+            "version": "==0.1.0"
+        },
+        "markdown-urlize": {
+            "hashes": [
+                "sha256:93ad5d00cdeacb5db1a01a39e2cb3bc3da03ad73e9c57688ee83331baff96daf"
+            ],
+            "index": "pypi",
+            "version": "==0.2.0"
+        },
+        "markdownsubscript": {
+            "hashes": [
+                "sha256:5ab97d56a16911650d52a81aeecbe0bcad24b6120275c29647638fee7a2bd0c1",
+                "sha256:c7f88881bcc914e471b077f92b92afc38f50a4837a88aee21fd54cb031412f54"
+            ],
+            "index": "pypi",
+            "version": "==2.1.1"
+        },
+        "markdownsuperscript": {
+            "hashes": [
+                "sha256:2c255b5959c1f5dd364ae80762bd0a568a0fcc9fd4e4a3d7e7b192e88adf8900",
+                "sha256:ee31968806a7a283f486770d18ba8e3e21146d956736cec56ff226f4b634e8b3"
+            ],
+            "index": "pypi",
+            "version": "==2.1.1"
         },
         "requests": {
             "hashes": [
@@ -67,7 +97,7 @@
                 "sha256:5b26757dc6f79a3b7dc9fab95359328d5747fcb2409d331ea66d0272b90ab2a0",
                 "sha256:8b995ffe925347a2138d7ac0fe77155e4311a0ea6d6da4f5128fe4b3cbe5ed71"
             ],
-            "markers": "sys_platform == 'darwin'",
+            "markers": "platform_system == 'Darwin'",
             "version": "==0.1.0"
         },
         "backcall": {
