@@ -6,6 +6,9 @@ verify_ssl = true
 [dev-packages]
 ipykernel = "*"
 notebook = "*"
+black = "==19.10b0"
+flake8 = "*"
+pre-commit = "*"
 
 [packages]
 requests = "*"
@@ -17,3 +20,6 @@ markdown-emdash = "*"
 
 [requires]
 python_version = "3.8"
+
+[pipenv]
+allow_prereleases = true

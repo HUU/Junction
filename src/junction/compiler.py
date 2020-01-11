@@ -12,11 +12,12 @@ junctionMarkdown = Markdown(
         SuperscriptExtension(),
         SubscriptExtension(),
         EmDashExtension(),
-        UrlizeExtension()
+        UrlizeExtension(),
     ]
 )
 
+
 def markdown_to_storage(text):
     result = junctionMarkdown.convert(text)
-    junctionMarkdown.reset();
+    junctionMarkdown.reset()
     return result

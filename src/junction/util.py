@@ -1,11 +1,12 @@
 from collections import OrderedDict
 from collections.abc import Mapping
 
+
 class DotDict(OrderedDict):
-    '''
+    """
     Quick and dirty implementation of a dot-able dict, which allows access and
     assignment via object properties rather than dict indexing.
-    '''
+    """
 
     def __init__(self, *args, **kwargs):
         # we could just call super(DotDict, self).__init__(*args, **kwargs)

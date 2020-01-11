@@ -1,10 +1,9 @@
-import json
-from typing import Dict, TypeVar, List, Union
+from typing import Dict, List, Union
 
 from junction.confluence.models.subclassing import discriminator
 
-class ApiModel(object):
 
+class ApiModel(object):
     def encode_json(self):
         return self.__dict__
 
@@ -25,6 +24,7 @@ class ButtonLookAndFeel(ApiModel):
 
     backgroundColor: str = None
     color: str = None
+
 
 class NavigationLookAndFeel(ApiModel):
 
@@ -106,7 +106,7 @@ class SpacePermission(ApiModel):
 class SpaceSettings(ApiModel):
 
     routeOverrideEnabled: bool = None
-    _links: Dict[str,str] = None
+    _links: Dict[str, str] = None
 
 
 class Space(ApiModel):
@@ -116,7 +116,7 @@ class Space(ApiModel):
     name: str = None
     icon: Icon = None
     description = None
-    homepage: 'Content' = None
+    homepage: "Content" = None
     type: str = None
     metadata = None
     operations: List[OperationCheckResult] = None
@@ -127,7 +127,7 @@ class Space(ApiModel):
     lookAndFeel: LookAndFeel = None
     history = None
     _expandable = None
-    _links: Dict[str,str] = None
+    _links: Dict[str, str] = None
 
 
 class EmbeddedContent(ApiModel):
@@ -174,25 +174,25 @@ class Body(ApiModel):
 
 class Content(ApiModel):
 
-    id: str  = None
+    id: str = None
     type: str = None
     status: str = None
     space: Space = None
     history = None
     version = None
-    ancestors: List['Content'] = None
+    ancestors: List["Content"] = None
     operations: List[OperationCheckResult] = None
     children = None
     childTypes = None
     descendants = None
-    containers: Union[Space, 'Content'] = None
+    containers: Union[Space, "Content"] = None
     body: Body = None
     restrictions = None
     _expandable = None
-    _links: Dict[str,str] = None
+    _links: Dict[str, str] = None
 
 
-@discriminator(lambda json: json.get('type') == 'page')
+@discriminator(lambda json: json.get("type") == "page")
 class ContentPage(Content):
 
     title: str = None
@@ -201,11 +201,10 @@ class ContentPage(Content):
 
 
 class UpdateContent(ApiModel):
-
     @classmethod
     def from_content(cls, content):
         me = cls()
-        me.version = { 'number': content.version.number + 1 }
+        me.version = {"number": content.version.number + 1}
         me.title = content.title
         me.type = content.type
         me.status = content.status
@@ -217,7 +216,7 @@ class UpdateContent(ApiModel):
     title: str = None
     type: str = None
     status: str = None
-    ancestors: List['Content'] = None
+    ancestors: List["Content"] = None
     body: Body = None
 
 
@@ -228,7 +227,7 @@ class CreateContent(ApiModel):
     type: str = None
     space: Space
     status: str = None
-    ancestors: List['Content'] = None
+    ancestors: List["Content"] = None
     body: Body = None
 
 
@@ -238,4 +237,4 @@ class ContentArray(ApiModel):
     start: int = None
     limit: int = None
     size: int = None
-    _links: Dict[str,str] = None
+    _links: Dict[str, str] = None

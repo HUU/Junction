@@ -2,6 +2,7 @@ from typing import Callable
 
 DISCRIMINATORS_BY_CLASS = {}
 
+
 def get_all_subclasses(klass):
     all_subclasses = []
 
@@ -11,11 +12,14 @@ def get_all_subclasses(klass):
 
     return all_subclasses
 
+
 def discriminator(matcher: Callable[[dict], bool]):
     def discriminator_decorator(klass):
         DISCRIMINATORS_BY_CLASS[klass] = matcher
         return klass
+
     return discriminator_decorator
+
 
 def get_matching_subclass(klass, raw_json_dict):
     for candidate in get_all_subclasses(klass):

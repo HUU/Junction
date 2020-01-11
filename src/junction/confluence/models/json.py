@@ -6,13 +6,14 @@ from junction.util import DotDict
 from junction.confluence.models import ApiModel
 from junction.confluence.models.subclassing import get_matching_subclass
 
-class ApiEncoder(json.JSONEncoder):
 
+class ApiEncoder(json.JSONEncoder):
     def default(self, obj):
-        if hasattr(obj, 'encode_json'):
+        if hasattr(obj, "encode_json"):
             return obj.encode_json()
 
         return super().default(obj)
+
 
 def ApiDecoder(root_klass):
     class KlassJSONDecoder(object):
@@ -26,9 +27,17 @@ def ApiDecoder(root_klass):
             for key, value in dict.items():
                 if hasattr(new_obj, key):
                     if key not in hints:
-                        setattr(new_obj, key, value if not issubclass(value.__class__, Mapping) else DotDict(value))
+                        setattr(
+                            new_obj,
+                            key,
+                            value
+                            if not issubclass(value.__class__, Mapping)
+                            else DotDict(value),
+                        )
                     else:
-                        setattr(new_obj, key, self.__marshal_hinted_class(value, hints[key]))
+                        setattr(
+                            new_obj, key, self.__marshal_hinted_class(value, hints[key])
+                        )
             return new_obj
 
         def __marshal_hinted_class(self, value, hint):
