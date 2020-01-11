@@ -1,6 +1,7 @@
 import json
 from typing import Dict, TypeVar, List, Union
 
+from junction.confluence.models.subclassing import discriminator
 
 class ApiModel(object):
 
@@ -173,9 +174,9 @@ class Body(ApiModel):
 
 class Content(ApiModel):
 
-    id = None
-    type = None
-    status = None
+    id: str  = None
+    type: str = None
+    status: str = None
     space: Space = None
     history = None
     version = None
@@ -190,6 +191,12 @@ class Content(ApiModel):
     _expandable = None
     _links: Dict[str,str] = None
 
+@discriminator(lambda json: json.get('type') == 'page')
+class ContentPage(Content):
+
+    title: str = None
+    metadata = None
+    extensions = None
 
 class ContentArray(ApiModel):
 

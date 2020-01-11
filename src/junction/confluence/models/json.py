@@ -4,6 +4,7 @@ from typing import get_type_hints, get_origin, get_args
 
 from junction.__util import DotDict
 from junction.confluence.models import ApiModel
+from junction.confluence.models.subclassing import get_matching_subclass
 
 class ApiEncoder(json.JSONEncoder):
 
@@ -20,7 +21,7 @@ def ApiDecoder(root_klass):
             return self.__marshal_to_class(raw_dict, root_klass)
 
         def __marshal_to_class(self, dict, klass):
-            new_obj = klass()
+            new_obj = get_matching_subclass(klass, dict)()
             hints = get_type_hints(klass)
             for key, value in dict.items():
                 if hasattr(new_obj, key):
