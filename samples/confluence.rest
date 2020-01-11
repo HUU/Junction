@@ -3,5 +3,5 @@
 @authorization = Basic {{username}} {{password}}
 
 ###
-GET https://jihugh.atlassian.net/wiki/rest/api/content?spaceKey=NS&title=Sample%20Page&expand=body.storage
+GET https://jihugh.atlassian.net/wiki/rest/api/content?spaceKey=NS&title=Sample%20Page&expand=body.storage,version
 Authorization: {{authorization}}

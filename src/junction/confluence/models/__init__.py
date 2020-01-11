@@ -191,12 +191,46 @@ class Content(ApiModel):
     _expandable = None
     _links: Dict[str,str] = None
 
+
 @discriminator(lambda json: json.get('type') == 'page')
 class ContentPage(Content):
 
     title: str = None
     metadata = None
     extensions = None
+
+
+class UpdateContent(ApiModel):
+
+    @classmethod
+    def from_content(cls, content):
+        me = cls()
+        me.version = { 'number': content.version.number + 1 }
+        me.title = content.title
+        me.type = content.type
+        me.status = content.status
+        me.ancestors = content.ancestors
+        me.body = content.body
+        return me
+
+    version = None
+    title: str = None
+    type: str = None
+    status: str = None
+    ancestors: List['Content'] = None
+    body: Body = None
+
+
+class CreateContent(ApiModel):
+
+    id: str = None
+    title: str = None
+    type: str = None
+    space: Space
+    status: str = None
+    ancestors: List['Content'] = None
+    body: Body = None
+
 
 class ContentArray(ApiModel):
 

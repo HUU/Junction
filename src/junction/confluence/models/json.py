@@ -2,7 +2,7 @@ import json
 from collections.abc import Mapping, Iterable
 from typing import get_type_hints, get_origin, get_args
 
-from junction.__util import DotDict
+from junction.util import DotDict
 from junction.confluence.models import ApiModel
 from junction.confluence.models.subclassing import get_matching_subclass
 
