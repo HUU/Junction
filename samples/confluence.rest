@@ -3,5 +3,39 @@
 @authorization = Basic {{username}} {{password}}
 
 ###
-GET https://jihugh.atlassian.net/wiki/rest/api/content?spaceKey=NS&title=Sample%20Page&expand=body.storage,version
+GET https://jihugh.atlassian.net/wiki/rest/api/content?spaceKey=NS&type=page&title=Child%20Page&expand=version
 Authorization: {{authorization}}
+
+###
+POST https://jihugh.atlassian.net/wiki/rest/api/content
+Authorization: {{authorization}}
+X-Atlassian-Token: no-check
+Content-Type: application/json
+
+{
+  "title": "New Page",
+  "type": "page",
+  "space": {
+    "key": "NS"
+  },
+  "body": {
+    "storage": {
+      "value": "Hello World",
+      "representation": "storage"
+    }
+  }
+}
+
+###
+PUT https://jihugh.atlassian.net/wiki/rest/api/content/2621451
+Authorization: {{authorization}}
+X-Atlassian-Token: no-check
+Content-Type: application/json
+
+{
+    "type": "page",
+    "title": "Child Page 2",
+    "version": {
+        "number": 3
+    }
+}

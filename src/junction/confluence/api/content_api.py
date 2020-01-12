@@ -12,11 +12,15 @@ class ContentApi(object):
     def __init__(self, api_client):
         self.__api_client = api_client
 
-    def add_content(self, content: CreateContent, **kwargs):
-        self.__api_client.post(BASE_PATH, body=content, **kwargs)
+    def add_content(self, content: CreateContent, **kwargs) -> Content:
+        response = self.__api_client.post(BASE_PATH, body=content, **kwargs)
+        return self.__api_client.decode(response.text, Content)
 
     def update_content(self, content_id: str, content: UpdateContent, **kwargs):
-        self.__api_client.put(f"{BASE_PATH}/{content_id}", body=content, **kwargs)
+        response = self.__api_client.put(
+            f"{BASE_PATH}/{content_id}", body=content, **kwargs
+        )
+        return self.__api_client.decode(response.text, Content)
 
     def delete_content(self, content_id: str, **kwargs):
         self.__api_client.delete(f"{BASE_PATH}/{content_id}", **kwargs)
@@ -33,7 +37,7 @@ class ContentApi(object):
         start: int = 0,
         limit: int = 25,
         **kwargs,
-    ):
+    ) -> ContentArray:
         query_params = {
             "type": type,
             "spaceKey": space_key,

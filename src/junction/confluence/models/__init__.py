@@ -1,5 +1,6 @@
 from typing import Dict, List, Union
 
+from junction.util import DotDict
 from junction.confluence.models.subclassing import discriminator
 
 
@@ -204,11 +205,13 @@ class UpdateContent(ApiModel):
     @classmethod
     def from_content(cls, content):
         me = cls()
-        me.version = {"number": content.version.number + 1}
+        me.version = DotDict({"number": content.version.number + 1})
         me.title = content.title
         me.type = content.type
         me.status = content.status
-        me.ancestors = content.ancestors
+        me.ancestors = (
+            [DotDict({"id": content.ancestors[-1].id})] if content.ancestors else None
+        )
         me.body = content.body
         return me
 

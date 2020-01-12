@@ -1,5 +1,14 @@
+from typing import Callable, TypeVar, List
+
 from collections import OrderedDict
 from collections.abc import Mapping
+
+T = TypeVar("T")
+
+
+def for_all(items: List[T], action: Callable[[T], None]):
+    for item in items:
+        action(item)
 
 
 class DotDict(OrderedDict):

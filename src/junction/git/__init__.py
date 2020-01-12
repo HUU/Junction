@@ -1,5 +1,6 @@
 from pathlib import Path
 from enum import Enum
+from typing import List
 from git import Repo, Commit, NULL_TREE, Diff
 
 
@@ -19,9 +20,12 @@ def find_repository_root(path: Path):
 
 
 def find_commits_on_branch_after(branch_name: str, start_commit_sha: str, repo: Repo):
-    reverse_chronological_commits = list(
-        repo.iter_commits(f"{start_commit_sha}..{branch_name}", first_parent=True)
+    rev = (
+        branch_name
+        if start_commit_sha is None
+        else f"{start_commit_sha}..{branch_name}"
     )
+    reverse_chronological_commits = list(repo.iter_commits(rev, first_parent=True))
     reverse_chronological_commits.reverse()
     return reverse_chronological_commits
 
@@ -81,3 +85,20 @@ def get_modifications(commit: Commit):
         diffs = commit.diff(NULL_TREE)
 
     return [Modification.from_diff(d) for d in diffs]
+
+
+def filter_modifications_to_folder(modifications: List[Modification], folder: Path):
+
+    for mod in modifications:
+        new_path_in_folder = folder in mod.path.parents
+        old_path_in_folder = (
+            folder in mod.previous_path.parents if mod.previous_path else False
+        )
+        if new_path_in_folder or old_path_in_folder:
+            yield Modification(
+                mod.previous_path.relative_to(folder)
+                if old_path_in_folder
+                else mod.previous_path,
+                mod.path.relative_to(folder) if new_path_in_folder else mod.new_path,
+                mod.change_type,
+            )
