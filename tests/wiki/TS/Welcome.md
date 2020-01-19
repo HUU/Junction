@@ -10,7 +10,7 @@ Junction will take markdown documents and turn them into Confluence wiki pages.
 * Ordered Lists
 * *Italics*
 * **Bold**
-* ~~Strikethrough~~
+* Subscripts~With tilde~ and Superscripts^With caret^
 * [Links](https://www.google.com)
 * Inline `code`
 * ...more to come!
