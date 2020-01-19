@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import List
+from uuid import uuid4
 
+from junction.markdown import markdown_to_storage
 from junction.confluence.api import Confluence
 from junction.confluence.models import (
     UpdateContent,
@@ -21,18 +23,24 @@ class PageAction(ABC):
 
 
 class MovePage(PageAction):
-    def __init__(self, title: str, ancestor_titles: List[str] = None):
+    def __init__(self, title: str, new_title: str, ancestor_titles: List[str] = None):
         self.title = title
+        self.new_title = new_title
         self.ancestor_titles = ancestor_titles
 
     def execute(self, api_client: Confluence, space_key: str):
         query = api_client.content.get_content(
-            type="page", space_key=space_key, title=self.title, expand="version"
+            type="page",
+            space_key=space_key,
+            title=self.title,
+            expand="version,ancestors",
         )
         if query.size != 1:
             raise RuntimeError(
                 f"No page found with title {self.title} in space {space_key} to move."
             )
+
+        old_page = query.results[0]
 
         parent = (
             EnsureAncestors(self.ancestor_titles).execute(api_client, space_key)
@@ -43,10 +51,16 @@ class MovePage(PageAction):
         update_request = UpdateContent()
         update_request.title = self.new_title
         update_request.type = "page"
-        update_request.version = {"number": query.results[0].version.number + 1}
+        update_request.version = {"number": old_page.version.number + 1}
         update_request.ancestors = {"id": parent.id} if parent else None
 
-        api_client.content.update_content(query.results[0].id, update_request)
+        api_client.content.update_content(old_page.id, update_request)
+
+        if old_page.ancestors:
+            # the last entry in ancestors will be the immediate parent
+            CleanupEmptyAncestors(old_page.ancestors[-1].title).execute(
+                api_client, space_key
+            )
 
 
 class CreatePage(PageAction):
@@ -99,10 +113,10 @@ class EnsureAncestors(CreatePage):
             raise RuntimeError(
                 f"More than one result when searching for {self.title} in space {space_key} to create."
             )
-        elif query.size == 1 or not self.ancestor_titles:
-            # ancestor must already exist OR this is the root page of the space..good enough!
+        elif query.size == 1:
+            # ancestor must already exist
             return query.results[0]
-        else:  # query.size == 0 and it isn't the root page
+        else:  # query.size == 0
             return super().execute(api_client, space_key)
 
 
@@ -127,7 +141,7 @@ class UpdatePage(PageAction):
             current_ancestors = [x.title for x in query.results[0].ancestors]
             assert (
                 self.ancestor_titles == current_ancestors
-            ), "Cannot change ancestors during with UpdatePage, use MovePage instead.  {} != {}".format(
+            ), "Cannot change ancestors with UpdatePage, use MovePage instead.  {} != {}".format(
                 self.ancestor_titles, current_ancestors
             )
 
@@ -157,7 +171,7 @@ class DeletePage(PageAction):
 
     def execute(self, api_client: Confluence, space_key: str):
         query = api_client.content.get_content(
-            type="page", space_key=space_key, title=self.title
+            type="page", space_key=space_key, title=self.title, expand="ancestors"
         )
         if query.size > 1:
             raise RuntimeError(
@@ -167,7 +181,38 @@ class DeletePage(PageAction):
             # already gone, don't error
             return
         else:  # query.size == 1
-            api_client.content.delete_content(query.results[0].id)
+            page = query.results[0]
+            api_client.content.delete_content(page.id)
+            if page.ancestors:
+                # the last entry in ancestors will be the immediate parent
+                CleanupEmptyAncestors(page.ancestors[-1].title).execute(
+                    api_client, space_key
+                )
+
+
+class CleanupEmptyAncestors(DeletePage):
+    def __init__(self, title: str):
+        self.title = title
+
+    def execute(self, api_client: Confluence, space_key: str):
+        query = api_client.content.get_content(
+            type="page",
+            space_key=space_key,
+            title=self.title,
+            expand="ancestors,childTypes.page",
+        )
+        if query.size > 1:
+            raise RuntimeError(
+                f"More than one result when searching for {self.title} in space {space_key} to delete."
+            )
+        elif query.size == 0:
+            # already gone, don't error
+            return
+        else:  # query.size == 1
+            page = query.results[0]
+            if not page.childTypes.page.value:
+                # no children, delete self!  this will recursively delete all parents as they empty out too
+                super().execute(api_client, space_key)
 
 
 class Delta(object):
@@ -184,20 +229,32 @@ class Delta(object):
         for_all(self.adds, lambda x: x.execute(api_client, space_key))
         for_all(self.finish_renames, lambda x: x.execute(api_client, space_key))
         for_all(self.updates, lambda x: x.execute(api_client, space_key))
-        # TODO: cleanup empty indexes?
 
     @staticmethod
     def from_modifications(modifications: List[Modification]):
         me = Delta()
         for mod in modifications:
+            title = mod.path.stem
+            ancestors = mod.path.parts[:-1]
+
             if mod.change_type == ModificationType.ADD:
-                pass
+                me.adds.append(
+                    CreatePage(title, markdown_to_storage(mod.source_code), ancestors)
+                )
             elif mod.change_type == ModificationType.MODIFY:
-                pass
+                me.updates.append(
+                    UpdatePage(title, markdown_to_storage(mod.source_code), ancestors)
+                )
             elif mod.change_type == ModificationType.DELETE:
-                pass
+                me.deletes.append(DeletePage(title))
             elif mod.change_type == ModificationType.RENAME:
-                pass
+                old_title = mod.previous_path.stem
+                temporary_title = f"{uuid4()}_{old_title}"
+                me.start_renames.append(MovePage(old_title, temporary_title))
+                me.finish_renames.append(MovePage(temporary_title, title, ancestors))
+                me.finish_renames.append(
+                    UpdatePage(title, markdown_to_storage(mod.source_code), ancestors)
+                )
             else:
                 raise NotImplementedError(
                     "Cannot process delta for modification type {}".format(

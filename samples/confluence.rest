@@ -3,7 +3,7 @@
 @authorization = Basic {{username}} {{password}}
 
 ###
-GET https://jihugh.atlassian.net/wiki/rest/api/content?spaceKey=NS&type=page&title=Child%20Page&expand=version
+GET https://jihugh.atlassian.net/wiki/rest/api/content?spaceKey=NS&type=page&title=Child%20Page%202&expand=ancestors,childTypes.page
 Authorization: {{authorization}}
 
 ###

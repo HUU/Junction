@@ -1,7 +1,7 @@
 from pathlib import Path
 from enum import Enum
 from typing import List
-from git import Repo, Commit, NULL_TREE, Diff
+from git import Repo, Commit, NULL_TREE, Diff, Tree
 
 
 def find_repository_root(path: Path):
@@ -39,10 +39,17 @@ class ModificationType(Enum):
 
 
 class Modification:
-    def __init__(self, old_path: str, new_path: str, change_type: ModificationType):
+    def __init__(
+        self,
+        old_path: str,
+        new_path: str,
+        change_type: ModificationType,
+        source_code: str = None,
+    ):
         self._old_path = Path(old_path) if old_path is not None else None
         self._new_path = Path(new_path) if new_path is not None else None
         self.change_type = change_type
+        self.source_code = source_code
 
     @property
     def previous_path(self):
@@ -66,12 +73,19 @@ class Modification:
         return ModificationType.UNKNOWN
 
     @staticmethod
-    def from_diff(diff: Diff):
+    def from_diff(diff: Diff, tree: Tree):
         old_path = diff.a_path
         new_path = diff.b_path
         change_type = Modification._determine_modification_type(diff)
 
-        return Modification(old_path, new_path, change_type)
+        tree_path = new_path if new_path else old_path
+        source_code = (
+            tree[tree_path].data_stream.read()
+            if change_type != ModificationType.DELETE
+            else None
+        )
+
+        return Modification(old_path, new_path, change_type, source_code)
 
     def __repr__(self):
         return f"{self.change_type} {self.path}"
@@ -84,7 +98,7 @@ def get_modifications(commit: Commit):
         # initial commit
         diffs = commit.diff(NULL_TREE)
 
-    return [Modification.from_diff(d) for d in diffs]
+    return [Modification.from_diff(d, tree=commit.tree) for d in diffs]
 
 
 def filter_modifications_to_folder(modifications: List[Modification], folder: Path):
@@ -101,4 +115,5 @@ def filter_modifications_to_folder(modifications: List[Modification], folder: Pa
                 else mod.previous_path,
                 mod.path.relative_to(folder) if new_path_in_folder else mod.new_path,
                 mod.change_type,
+                mod.source_code,
             )
