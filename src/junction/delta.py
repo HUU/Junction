@@ -97,13 +97,19 @@ class CreatePage(PageAction):
             create_request.body = Body()
             create_request.body.storage = ContentBody()
             create_request.body.storage.value = self.new_body
+            create_request.body.storage.representation = "storage"
 
             return api_client.content.add_content(create_request)
 
 
 class EnsureAncestors(CreatePage):
+
+    PAGE_BODY_LIST_CHILDREN = '<p><ac:structured-macro ac:name="children" ac:schema-version="2" ac:macro-id="92c7a2c4-5cca-4ecf-81a2-946ef7388c71" /></p>'
+
     def __init__(self, ancestor_titles: List[str]):
-        super().__init__(ancestor_titles[-1], "Index page, todo", ancestor_titles[:-1])
+        super().__init__(
+            ancestor_titles[-1], self.PAGE_BODY_LIST_CHILDREN, ancestor_titles[:-1]
+        )
 
     def execute(self, api_client: Confluence, space_key: str) -> Content:
         query = api_client.content.get_content(
@@ -157,6 +163,7 @@ class UpdatePage(PageAction):
             update_request.body = Body()
             update_request.body.storage = ContentBody()
             update_request.body.storage.value = self.new_body
+            update_request.body.storage.representation = "storage"
 
             return api_client.content.update_content(
                 query.results[0].id, update_request

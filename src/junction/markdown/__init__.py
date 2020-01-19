@@ -18,6 +18,8 @@ junctionMarkdown = Markdown(
 
 
 def markdown_to_storage(text):
+    if hasattr(text, "decode"):
+        text = text.decode("utf-8", "ignore")
     result = junctionMarkdown.convert(text)
     junctionMarkdown.reset()
     return result
