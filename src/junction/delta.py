@@ -190,11 +190,15 @@ class DeletePage(PageAction):
         else:  # query.size == 1
             page = query.results[0]
             api_client.content.delete_content(page.id)
-            if page.ancestors:
-                # the last entry in ancestors will be the immediate parent
-                CleanupEmptyAncestors(page.ancestors[-1].title).execute(
-                    api_client, space_key
-                )
+            if page.ancestors and len(page.ancestors) > 1:
+                # try to cleanup any parents as they might now be empty..however skip
+                # this step if there aren't any parents, or only 1 parent (that is always the
+                # space homepage, and we don't want to delete that).
+                CleanupEmptyAncestors(
+                    page.ancestors[
+                        -1
+                    ].title  # the last entry in ancestors will be the immediate parent
+                ).execute(api_client, space_key)
 
 
 class CleanupEmptyAncestors(DeletePage):
