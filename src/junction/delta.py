@@ -52,7 +52,7 @@ class MovePage(PageAction):
         update_request.title = self.new_title
         update_request.type = "page"
         update_request.version = {"number": old_page.version.number + 1}
-        update_request.ancestors = {"id": parent.id} if parent else None
+        update_request.ancestors = [{"id": parent.id}] if parent else None
 
         api_client.content.update_content(old_page.id, update_request)
 
@@ -93,7 +93,7 @@ class CreatePage(PageAction):
             create_request.type = "page"
             create_request.space = Space()
             create_request.space.key = space_key
-            create_request.ancestors = {"id": parent.id} if parent else None
+            create_request.ancestors = [{"id": parent.id}] if parent else None
             create_request.body = Body()
             create_request.body.storage = ContentBody()
             create_request.body.storage.value = self.new_body
@@ -156,7 +156,7 @@ class UpdatePage(PageAction):
             update_request.type = "page"
             update_request.version = {"number": query.results[0].version.number + 1}
             update_request.ancestors = (
-                {"id": query.results[0].ancestors[-1].id}
+                [{"id": query.results[0].ancestors[-1].id}]
                 if query.results[0].ancestors
                 else None
             )
