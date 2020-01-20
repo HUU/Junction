@@ -1,10 +1,37 @@
+"""The Junction Delta API
+
+The Delta API uses sets of Modification's to build lists of API calls to execute against Confluence in order
+to reconcile it with the pages in the local filesystem.
+
+It assumes the wiki space is managed by Junction in its entirety and no other modifications are performed
+manually.  The Delta API works well for large wiki spaces because it minimizes the amount of data that needs
+to be fetched from Confluence, as well as the number of API calls needed to update the wiki.
+
+The downside of the Delta API is certain errors will leave the wiki either in an unreconcilable state or it
+will "leak" some pages, usually index pages, that need to be cleaned up by hand.
+
+The Delta API breaks up modifications into several different actions and executes them in this order:
+    * Page Deletes (and cleaning up any indexes without children after those deletes)
+    * Starting Page Moves, by moving them to the root of the space with a randomly generated name (and cleaning up any indexes without children after those moves)
+    * Page Creates (and making any index pages that do not already exist)
+    * Finishing Page Moves, by moving them to their final destinations with the desired name (and making any index pages that do not already exist)
+    * Page Updates
+
+This ordering was chosen very specifically, along with the choice to split page moves in this seemingly peculiar way, to deal with various potential edge cases
+that can occur based on the type of modifications, some examples:
+    * A Page "A.md" gets moved into a folder with the same name and gets a new name "A/Foobar.md"
+    * A Folder "Foobar" gets deleted and replaced with a file by the same name "Foobar.md"
+These edge cases even occur in Confluence naturally, with users having to rename pages/move them around as they shuffle the page hierarchy.  This was the most sane, generic
+way to replicate that procedure.
+"""
+
 import logging
 from abc import ABC, abstractmethod
 from typing import List
 from uuid import uuid4
 
 from junction.markdown import markdown_to_storage
-from junction.confluence.api import Confluence
+from junction.confluence import Confluence
 from junction.confluence.models import (
     UpdateContent,
     Body,
@@ -35,6 +62,9 @@ class PageAction(ABC):
 
     @abstractmethod
     def execute(self, api_client: Confluence, space_key: str):
+        pass
+
+    def fetch_target_page(self, api_client, space_key):
         query = api_client.content.get_content(
             type="page",
             space_key=space_key,
@@ -84,7 +114,7 @@ class MovePage(PageAction):
             the operation succeeded and fail out.
         """
 
-        query = super().execute(api_client, space_key)
+        query = self.fetch_target_page(api_client, space_key)
         if query.size == 0:
             logger.warn(
                 "%s does not exist, checking if the move to %s was previously completed...",
@@ -169,7 +199,7 @@ class CreatePage(PageAction):
             Content -- The created page.
         """
 
-        query = super().execute(api_client, space_key)
+        query = self.fetch_target_page(api_client, space_key)
         if query.size == 1:
             logger.info(
                 "Trying to create %s but it already exists, updating instead.",
@@ -199,7 +229,7 @@ class CreatePage(PageAction):
                 "Creating %s",
                 (self.ancestor_titles if self.ancestor_titles else []) + [self.title],
             )
-            return api_client.content.add_content(create_request)
+            return api_client.content.create_content(create_request)
 
 
 class EnsureAncestors(CreatePage):
@@ -235,7 +265,7 @@ class EnsureAncestors(CreatePage):
             Content -- The leaf ancestor (whose ID can be specified in ancestors[0].id for a create/update page request)
         """
 
-        query = super().execute(api_client, space_key)
+        query = self.fetch_target_page(api_client, space_key)
         if query.size == 1:
             # ancestor must already exist
             logger.info(
@@ -283,7 +313,7 @@ class UpdatePage(PageAction):
             Content -- The updated page.
         """
 
-        query = super().execute(api_client, space_key)
+        query = self.fetch_target_page(api_client, space_key)
         if query.size == 1:
             # skip the first ancestor, it's the space home page
             current_ancestors = [x.title for x in query.results[0].ancestors[1:]]
@@ -331,7 +361,7 @@ class DeletePage(PageAction):
             title {str} -- The title of the page to update.
             new_body {str} -- The body to assign to the page.  Should be in Confluence storage representation.
         """
-        query = super().execute(api_client, space_key)
+        query = self.fetch_target_page(api_client, space_key)
         if query.size == 0:
             # already gone, don't error
             logger.info("Trying to delete %s but it's already gone.", self.title)
@@ -368,7 +398,7 @@ class CleanupEmptyAncestors(DeletePage):
             api_client {Confluence} -- Confluence API client to use for all API actions.
             space_key {str} -- Space to target all page actions.
         """
-        query = super().execute(api_client, space_key)
+        query = self.fetch_target_page(api_client, space_key)
         if query.size == 0:
             # already gone, don't error
             logger.info(

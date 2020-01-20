@@ -7,6 +7,12 @@ T = TypeVar("T")
 
 
 def for_all(items: List[T], action: Callable[[T], None]):
+    """Runs a particular function for every item in a list.
+
+    Arguments:
+        items {List[T]} -- A list of items.
+        action {Callable[[T], None]} -- A function to call which accepts a single item.
+    """
     for item in items:
         action(item)
 

@@ -1,8 +1,9 @@
 import requests
 import logging
 from urllib.parse import urlencode, urljoin
+from typing import Union, Sequence
 
-from junction.confluence.api.content_api import ContentApi
+from junction.confluence.models import ApiModel
 from junction.confluence.models.json import ApiEncoder, ApiDecoder
 
 
@@ -16,30 +17,54 @@ class _ApiClient(object):
         "Content-Type": "application/json",
     }
 
-    def __init__(self, api_url, username, password):
+    def __init__(self, api_url: str, username: str, password: str):
         self.basic_auth = (username, password)
         self.api_url = api_url + "/" if not api_url.endswith("/") else api_url
         self.__json_encoder = ApiEncoder()
 
-    def decode(self, s, klass):
-        return ApiDecoder(klass)().decode(s)
+    def decode(self, s: str, klass: type):
+        return ApiDecoder(klass).decode(s)
 
-    def get(self, resource_path, query_params=None, headers=None, body=None):
+    def get(
+        self,
+        resource_path: str,
+        query_params: Union[dict, Sequence[tuple]] = None,
+        headers: dict = None,
+        body: ApiModel = None,
+    ):
         return self.__call_api(
             resource_path, "GET", query_params=query_params, headers=headers, body=body
         )
 
-    def post(self, resource_path, query_params=None, headers=None, body=None):
+    def post(
+        self,
+        resource_path: str,
+        query_params: Union[dict, Sequence[tuple]] = None,
+        headers: dict = None,
+        body: ApiModel = None,
+    ):
         return self.__call_api(
             resource_path, "POST", query_params=query_params, headers=headers, body=body
         )
 
-    def put(self, resource_path, query_params=None, headers=None, body=None):
+    def put(
+        self,
+        resource_path: str,
+        query_params: Union[dict, Sequence[tuple]] = None,
+        headers: dict = None,
+        body: ApiModel = None,
+    ):
         return self.__call_api(
             resource_path, "PUT", query_params=query_params, headers=headers, body=body
         )
 
-    def delete(self, resource_path, query_params=None, headers=None, body=None):
+    def delete(
+        self,
+        resource_path: str,
+        query_params: Union[dict, Sequence[tuple]] = None,
+        headers: dict = None,
+        body: ApiModel = None,
+    ):
         return self.__call_api(
             resource_path,
             "DELETE",
@@ -49,7 +74,12 @@ class _ApiClient(object):
         )
 
     def __call_api(
-        self, resource_path, method, query_params=None, headers=None, body=None
+        self,
+        resource_path: str,
+        method: str,
+        query_params: Union[dict, Sequence[tuple]] = None,
+        headers: dict = None,
+        body: ApiModel = None,
     ):
 
         headers = headers or {}
@@ -92,9 +122,3 @@ class _ApiClient(object):
         response.raise_for_status()
 
         return response
-
-
-class Confluence(object):
-    def __init__(self, api_url, username, password):
-        self.__api_client = _ApiClient(api_url, username, password)
-        self.content = ContentApi(self.__api_client)

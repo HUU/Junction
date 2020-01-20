@@ -1,3 +1,20 @@
+"""All the models used on the Confluence API.
+
+Models must meet the following criteria:
+    * Inherit from ApiModel to ensure proper serialization
+    * Define all class attributes with a default value (of None usually)
+    * All attributes should be type hinted except in extreme circumstances; for "unknown" types use DotDict
+    * Reference only primitive types or other ApiModels
+
+Basic type discrimination is supported for class hierarchies with the @discriminator annotation.
+
+Dumped into one giant file to avoid circular references.  None of the solutions to circular imports in
+Python appealed to me and models are unchanging, uncomplicated, and often used together so not worth splitting out
+into different modules.  Also makes adding new models easier as there is only one module it can possibly go!
+
+Reference model definitions at https://developer.atlassian.com/cloud/confluence/rest/
+"""
+
 from typing import List, Union, Any
 
 from junction.util import DotDict
@@ -373,7 +390,7 @@ class CreateContent(ApiModel):
     id: str = None
     title: str = None
     type: str = None
-    space: Space
+    space: Space = None
     status: str = None
     ancestors: List["Content"] = None
     body: Body = None

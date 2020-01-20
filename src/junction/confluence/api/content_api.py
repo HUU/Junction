@@ -5,26 +5,38 @@ from junction.confluence.models import (
     CreateContent,
 )
 
+
 BASE_PATH = "content"
 
 
 class ContentApi(object):
+    """The Confluence Content API is used for managing all forms of contents including pages,
+    blog posts, comments, attachments, and more.  Pages are well supported; the other types have not been
+    touched or tested.  Only the needed methods are implemented; this is not a general purpose Confluence API
+    wrapper.
+
+    Reference https://developer.atlassian.com/cloud/confluence/rest/ for API semantics.
+    """
+
     def __init__(self, api_client) -> None:
         self.__api_client = api_client
 
-    def add_content(self, content: CreateContent, **kwargs) -> Content:
+    def create_content(self, content: CreateContent, **kwargs) -> Content:
+        """https://developer.atlassian.com/cloud/confluence/rest/#api-api-content-post"""
         response = self.__api_client.post(BASE_PATH, body=content, **kwargs)
         return self.__api_client.decode(response.text, Content)
 
     def update_content(
         self, content_id: str, content: UpdateContent, **kwargs
     ) -> Content:
+        """https://developer.atlassian.com/cloud/confluence/rest/#api-api-content-id-put"""
         response = self.__api_client.put(
             f"{BASE_PATH}/{content_id}", body=content, **kwargs
         )
         return self.__api_client.decode(response.text, Content)
 
     def delete_content(self, content_id: str, **kwargs) -> None:
+        """https://developer.atlassian.com/cloud/confluence/rest/#api-api-content-id-delete"""
         self.__api_client.delete(f"{BASE_PATH}/{content_id}", **kwargs)
 
     def get_content(
@@ -40,6 +52,7 @@ class ContentApi(object):
         limit: int = 25,
         **kwargs,
     ) -> ContentArray:
+        """https://developer.atlassian.com/cloud/confluence/rest/#api-api-content-get"""
         query_params = {
             "type": type,
             "spaceKey": space_key,
@@ -64,5 +77,6 @@ class ContentApi(object):
         return self.__api_client.decode(response.text, ContentArray)
 
     def get_content_by_id(self, content_id: str, **kwargs) -> Content:
+        """https://developer.atlassian.com/cloud/confluence/rest/#api-api-content-id-get"""
         response = self.__api_client.get(f"{BASE_PATH}/{content_id}", **kwargs)
         return self.__api_client.decode(response.text, Content)
