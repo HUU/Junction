@@ -1,12 +1,45 @@
-from typing import Dict, List, Union
+from typing import List, Union, Any
 
 from junction.util import DotDict
 from junction.confluence.models.subclassing import discriminator
 
 
 class ApiModel(object):
+    def __init__(self, **kwargs: Any):
+        for key, value in kwargs.items():
+            assert hasattr(self, key), "{} not a valid attribute of {}".format(
+                key, self.__class__
+            )
+            setattr(self, key, value)
+
+    def __repr__(self):
+        return "<class {}({})>".format(
+            self.__class__.__name__,
+            {k: getattr(self, k, None) for k in dir(self) if not k.startswith("_")},
+        )
+
+    def __str__(self):
+        return self.__repr__()
+
     def encode_json(self):
         return self.__dict__
+
+
+class Label(ApiModel):
+
+    prefix: str = None
+    name: str = None
+    id: str = None
+    label: str = None
+
+
+class LabelArray(ApiModel):
+
+    results: List[Label] = None
+    start: int = None
+    limit: int = None
+    size: int = None
+    _links: DotDict
 
 
 class OperationCheckResult(ApiModel):
@@ -15,9 +48,15 @@ class OperationCheckResult(ApiModel):
     targetType: str = None
 
 
+class LookAndFeelColorAndBackground(ApiModel):
+
+    backgroundColor: str = None
+    color: str = None
+
+
 class MenusLookAndFeel(ApiModel):
 
-    hoverOrFocus = None
+    hoverOrFocus: LookAndFeelColorAndBackground = None
     color: str = None
 
 
@@ -30,7 +69,7 @@ class ButtonLookAndFeel(ApiModel):
 class NavigationLookAndFeel(ApiModel):
 
     color: str = None
-    hoverOrFocus = None
+    hoverOrFocus: LookAndFeelColorAndBackground = None
 
 
 class SearchFieldLookAndFeel(ApiModel):
@@ -78,14 +117,19 @@ class ContentLookAndFeel(ApiModel):
     body: ContainerLookAndFeel = None
 
 
+class LookAndFeelColor(ApiModel):
+
+    color: str = None
+
+
 class LookAndFeel(ApiModel):
 
-    headings = None
-    links = None
+    headings: LookAndFeelColor = None
+    links: LookAndFeelColor = None
     menus: MenusLookAndFeel = None
     header: HeaderLookAndFeel = None
     content: ContentLookAndFeel = None
-    bordersAndDividers = None
+    bordersAndDividers: LookAndFeelColor = None
 
 
 class Icon(ApiModel):
@@ -96,9 +140,28 @@ class Icon(ApiModel):
     isDefault: bool = None
 
 
+class SpacePermissionUser(ApiModel):
+
+    results: List["User"] = None
+    size: int = None
+
+
+class SpacePermissionGroup(ApiModel):
+
+    results: List["Group"] = None
+    size: int = None
+
+
+class SpacePermissionSubjects(ApiModel):
+
+    user: SpacePermissionUser = None
+    group: SpacePermissionGroup = None
+    _expandable: DotDict = None
+
+
 class SpacePermission(ApiModel):
 
-    subjects = None
+    subjects: SpacePermissionSubjects = None
     operation: OperationCheckResult = None
     anonymousAccess: bool = None
     unlicensedAccess: bool = None
@@ -107,7 +170,39 @@ class SpacePermission(ApiModel):
 class SpaceSettings(ApiModel):
 
     routeOverrideEnabled: bool = None
-    _links: Dict[str, str] = None
+    _links: DotDict = None
+
+
+class SpaceDescription(ApiModel):
+
+    value: str = None
+    representation: str = None
+    embeddedContent: List[DotDict] = None
+
+
+class Description(ApiModel):
+
+    plain: SpaceDescription = None
+    view: SpaceDescription = None
+
+
+class SpaceMetadata(ApiModel):
+
+    labels: "LabelArray" = None
+
+
+class SpaceHistory(ApiModel):
+
+    createdDate: str = None
+
+
+class SpaceTheme(ApiModel):
+
+    themeKey: str = None
+    name: str = None
+    description: str = None
+    icon: Icon = None
+    _links: DotDict = None
 
 
 class Space(ApiModel):
@@ -116,31 +211,31 @@ class Space(ApiModel):
     key: str = None
     name: str = None
     icon: Icon = None
-    description = None
+    description: Description = None
     homepage: "Content" = None
     type: str = None
-    metadata = None
+    metadata: SpaceMetadata = None
     operations: List[OperationCheckResult] = None
     permissions: List[SpacePermission] = None
     status: str = None
     settings: SpaceSettings = None
-    theme = None
+    theme: SpaceTheme = None
     lookAndFeel: LookAndFeel = None
-    history = None
-    _expandable = None
-    _links: Dict[str, str] = None
+    history: SpaceHistory = None
+    _expandable: DotDict = None
+    _links: DotDict = None
 
 
 class EmbeddedContent(ApiModel):
 
     entityId: int = None
-    entity = None
+    entity: DotDict = None
 
 
 class SuperBatchWebResources(ApiModel):
 
-    uris = None
-    tags = None
+    uris: DotDict = None
+    tags: DotDict = None
     metatags: str = None
 
 
@@ -148,8 +243,8 @@ class WebResourceDependencies(ApiModel):
 
     keys: List[str] = None
     contexts: List[str] = None
-    uris = None
-    tags = None
+    uris: DotDict = None
+    tags: DotDict = None
     superbatch: SuperBatchWebResources = None
 
 
@@ -170,7 +265,52 @@ class Body(ApiModel):
     storage: ContentBody = None
     editor2: ContentBody = None
     anonymous_export_view: ContentBody = None
-    _expandable = None
+    _expandable: DotDict = None
+
+
+class ContentExtensions(ApiModel):
+
+    position: int = None
+
+
+class Favourited(ApiModel):
+
+    isFavourite: bool = None
+    favouritedDate: str = None
+
+
+class LastModified(ApiModel):
+
+    version: "Version" = None
+    friendlyLastModified: str = None
+
+
+class LastContributed(ApiModel):
+
+    status: str = None
+    when: str = None
+
+
+class Viewed(ApiModel):
+
+    lastSeen: str = None
+    friendlyLastSeen: str = None
+
+
+class CurrentUserMetadata(ApiModel):
+
+    favourited: Favourited = None
+    lastModified: LastModified = None
+    lastContributed: LastContributed = None
+    viewed: Viewed = None
+
+
+class ContentMetadata(ApiModel):
+
+    currentUser: CurrentUserMetadata = None
+    properties: DotDict = None
+    frontend: DotDict = None
+    labels: LabelArray = None
 
 
 class Content(ApiModel):
@@ -179,26 +319,31 @@ class Content(ApiModel):
     type: str = None
     status: str = None
     space: Space = None
-    history = None
-    version = None
+    history: "ContentHistory" = None
+    version: "Version" = None
     ancestors: List["Content"] = None
     operations: List[OperationCheckResult] = None
-    children = None
-    childTypes = None
-    descendants = None
+    children: "ContentChildren" = None
+    childTypes: "ContentChildType" = None
+    descendants: "ContentChildren" = None
     containers: Union[Space, "Content"] = None
     body: Body = None
-    restrictions = None
-    _expandable = None
-    _links: Dict[str, str] = None
+    restrictions: "ContentRestrictions" = None
+    _expandable: DotDict = None
+    _links: DotDict = None
 
 
 @discriminator(lambda json: json.get("type") == "page")
 class ContentPage(Content):
 
     title: str = None
-    metadata = None
-    extensions = None
+    metadata: ContentMetadata = None
+    extensions: ContentExtensions = None
+
+
+class UpdateVersion(ApiModel):
+
+    number: int = None
 
 
 class UpdateContent(ApiModel):
@@ -215,7 +360,7 @@ class UpdateContent(ApiModel):
         me.body = content.body
         return me
 
-    version = None
+    version: UpdateVersion = None
     title: str = None
     type: str = None
     status: str = None
@@ -240,4 +385,152 @@ class ContentArray(ApiModel):
     start: int = None
     limit: int = None
     size: int = None
-    _links: Dict[str, str] = None
+    _links: DotDict = None
+
+
+class ContentChildren(ApiModel):
+
+    attachment: ContentArray = None
+    comment: ContentArray = None
+    page: ContentArray = None
+    page: ContentArray = None
+    _expandable: DotDict = None
+    _links: DotDict = None
+
+
+class ContentChildTypeValue(ApiModel):
+
+    value: bool = None
+    _links: DotDict = None
+
+
+class ContentChildType(ApiModel):
+
+    attachment: ContentChildTypeValue = None
+    comment: ContentChildTypeValue = None
+    page: ContentChildTypeValue = None
+    _expandable: DotDict = None
+
+
+class ContentRestriction(ApiModel):
+
+    operation: str = None
+    restrictions: "Restrictions" = None
+    content: Content = None
+    _expandable: DotDict = None
+    _links: DotDict = None
+
+
+class ContentRestrictions(ApiModel):
+
+    read: ContentRestriction = None
+    update: ContentRestriction = None
+    _links: DotDict = None
+
+
+class Restrictions(ApiModel):
+
+    user: "UserArray" = None
+    group: "GroupArray" = None
+    _exapndable = None
+
+
+class Contributors(ApiModel):
+
+    publishers: "UsersUserKeys" = None
+
+
+class ContentHistory(ApiModel):
+
+    latest: bool = None
+    createdBy: "User" = None
+    createdDate: str = None
+    lastUpdated: "Version" = None
+    previousVersion: "Version" = None
+    contributors: Contributors = None
+    nextVersion: "Version" = None
+    _expandable: DotDict = None
+    _links: DotDict = None
+
+
+class Business(ApiModel):
+
+    position: str = None
+    department: str = None
+    location: str = None
+
+
+class Personal(ApiModel):
+
+    phone: str = None
+    im: str = None
+    website: str = None
+    email: str = None
+
+
+class UserDetails(ApiModel):
+
+    business: Business = None
+    personal: Personal = None
+
+
+class User(ApiModel):
+
+    type: str = None
+    username: str = None
+    userKey: str = None
+    accountId: str = None
+    accountType: str = None
+    email: str = None
+    publicName: str = None
+    profilePicture: Icon = None
+    displayName: str = None
+    operations: OperationCheckResult = None
+    details: UserDetails = None
+    personalSpace: Space = None
+    _expandable: DotDict = None
+    _links: DotDict
+
+
+class UsersUserKeys(ApiModel):
+
+    users: List[User] = None
+    userKeys: List[str] = None
+    _links: DotDict = None
+
+
+class UserArray(ApiModel):
+
+    results: List[User] = None
+    start: int = None
+    limit: int = None
+    size: int = None
+
+
+class Group(ApiModel):
+
+    type: str = None
+    name: str = None
+    _links: DotDict = None
+
+
+class GroupArray(ApiModel):
+
+    results: List[Group] = None
+    start: int = None
+    limit: int = None
+    size: int = None
+
+
+class Version(ApiModel):
+
+    by: User = None
+    when: str = None
+    friendlyWhen: str = None
+    message: str = None
+    number: int = None
+    minorEdit: bool = None
+    content: Content = None
+    collaborators: UsersUserKeys = None
+    _expandable: DotDict = None
+    _links: DotDict = None

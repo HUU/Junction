@@ -9,6 +9,7 @@ notebook = "*"
 black = "==19.10b0"
 flake8 = "*"
 pre-commit = "*"
+rope = "*"
 
 [packages]
 requests = "*"

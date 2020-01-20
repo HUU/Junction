@@ -1,8 +1,12 @@
 import requests
+import logging
 from urllib.parse import urlencode, urljoin
 
 from junction.confluence.api.content_api import ContentApi
 from junction.confluence.models.json import ApiEncoder, ApiDecoder
+
+
+logger = logging.getLogger(__name__)
 
 
 class _ApiClient(object):
@@ -54,21 +58,21 @@ class _ApiClient(object):
         query_string = f"?{urlencode(query_params)}" if query_params else None
         url = urljoin(urljoin(self.api_url, resource_path), query_string)
 
+        logger.debug("Confluence API call %s %s with headers %s", method, url, headers)
+
         if method == "GET":
             response = requests.get(url, auth=self.basic_auth, headers=headers)
         elif method == "POST":
+            data = self.__json_encoder.encode(body)
+            logger.debug(data)
             response = requests.post(
-                url,
-                data=self.__json_encoder.encode(body),
-                auth=self.basic_auth,
-                headers=headers,
+                url, data=data, auth=self.basic_auth, headers=headers,
             )
         elif method == "PUT":
+            data = self.__json_encoder.encode(body)
+            logger.debug(data)
             response = requests.put(
-                url,
-                data=self.__json_encoder.encode(body),
-                auth=self.basic_auth,
-                headers=headers,
+                url, data=data, auth=self.basic_auth, headers=headers,
             )
         elif method == "DELETE":
             response = requests.delete(url, auth=self.basic_auth, headers=headers)
@@ -77,6 +81,14 @@ class _ApiClient(object):
                 "API client does not support {} method".format(method)
             )
 
+        if response.status_code < 400:
+            logger.debug("Confluence API response: %s", response.text)
+        else:
+            logger.error(
+                "Confluence API failure response %s: %s",
+                response.status_code,
+                response.text,
+            )
         response.raise_for_status()
 
         return response

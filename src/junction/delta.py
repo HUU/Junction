@@ -1,3 +1,4 @@
+import logging
 from abc import ABC, abstractmethod
 from typing import List
 from uuid import uuid4
@@ -11,73 +12,169 @@ from junction.confluence.models import (
     CreateContent,
     Space,
     Content,
+    Version,
 )
 from junction.git import Modification, ModificationType
 from junction.util import for_all
 
 
+logger = logging.getLogger(__name__)
+
+
 class PageAction(ABC):
-    @abstractmethod
-    def execute(self, api_client: Confluence, space_key: str):
-        pass
+    """Base class for all actions against individual pages.  A page action should target an individual page in Confluence,
+    though it may also trigger additional actions affecting other pages as needed to successfully complete the requested action,
+    for example generating index pages for new folders.
 
+    Page actions should attempt to be somewhat replayable.  This ensures if Junction fails while executing a Delta that it can simply
+    be re-run.  This isn't quite full idempotency as some actions are inherently un-idempotent.  This could be changed to full idempotency
+    if index pages were made explicit (via the git/Modification API) rather than implicit as needed by a particular page action."""
 
-class MovePage(PageAction):
-    def __init__(self, title: str, new_title: str, ancestor_titles: List[str] = None):
+    def __init__(self, title: str):
         self.title = title
-        self.new_title = new_title
-        self.ancestor_titles = ancestor_titles
 
+    @abstractmethod
     def execute(self, api_client: Confluence, space_key: str):
         query = api_client.content.get_content(
             type="page",
             space_key=space_key,
             title=self.title,
-            expand="version,ancestors",
-        )
-        if query.size != 1:
-            raise RuntimeError(
-                f"No page found with title {self.title} in space {space_key} to move."
-            )
-
-        old_page = query.results[0]
-
-        parent = (
-            EnsureAncestors(self.ancestor_titles).execute(api_client, space_key)
-            if self.ancestor_titles
-            else None
-        )
-
-        update_request = UpdateContent()
-        update_request.title = self.new_title
-        update_request.type = "page"
-        update_request.version = {"number": old_page.version.number + 1}
-        update_request.ancestors = [{"id": parent.id}] if parent else None
-
-        api_client.content.update_content(old_page.id, update_request)
-
-        if old_page.ancestors:
-            # the last entry in ancestors will be the immediate parent
-            CleanupEmptyAncestors(old_page.ancestors[-1].title).execute(
-                api_client, space_key
-            )
-
-
-class CreatePage(PageAction):
-    def __init__(self, title: str, new_body: str, ancestor_titles: List[str] = None):
-        self.title = title
-        self.new_body = new_body
-        self.ancestor_titles = ancestor_titles
-
-    def execute(self, api_client: Confluence, space_key: str):
-        query = api_client.content.get_content(
-            type="page", space_key=space_key, title=self.title, expand="version"
+            expand="version,ancestors,childTypes.page",
         )
         if query.size > 1:
             raise RuntimeError(
-                f"More than one result when searching for {self.title} in space {space_key} to update."
+                f"More than one result when searching for {self.title} in space {space_key} to update; this should never happen, something strange is happening."
             )
-        elif query.size == 1:
+        return query
+
+
+class MovePage(PageAction):
+    """Move a page to under a different parent, or to a different name, or both simultaneously.  Although Confluence supports it,
+    you cannot change th content of the page while executing a move."""
+
+    def __init__(self, title: str, new_title: str, ancestor_titles: List[str] = []):
+        """Initializes an instance of MovePage.
+
+        Arguments:
+            title {str} -- The title of the page to move.
+            new_title {str} -- The new title of the page (can be the same as the old title if you just want to change the parent).
+
+        Keyword Arguments:
+            ancestor_titles {List[str]} -- The names of the parents to move the page under from root to leaf, excluding the space homepage. (default: {[]})
+        """
+        super().__init__(title)
+        self.new_title = new_title
+        self.ancestor_titles = ancestor_titles if ancestor_titles else []
+
+    def execute(self, api_client: Confluence, space_key: str) -> None:
+        """Moves a page by (optionally) changing its title and (optionally) changing its parent.  If the targeted page does not
+        exist, and the new page is already in place then returns successfully without doing anything.  This ensures this action
+        can be replayed in the event of failure somewhere else in the Delta.  If the targeted page and the new page do not exist,
+        then the operation aborts with an error as the wiki and git are in an unreconcilable state.
+
+        Automatically created any ancestor pages that do not already exist for the moved page.
+        Automatically deletes any ancestors pages without children after the old page is moved away.
+
+        Arguments:
+            api_client {Confluence} -- Confluence API client to use for all API actions.
+            space_key {str} -- Space to target all page actions.
+
+        Raises:
+            RuntimeError: If the targeted page cannot be found AND the new page is not present we cannot determine if
+            the operation succeeded and fail out.
+        """
+
+        query = super().execute(api_client, space_key)
+        if query.size == 0:
+            logger.warn(
+                "%s does not exist, checking if the move to %s was previously completed...",
+                self.title,
+                self.new_title,
+            )
+            new_query = api_client.content.get_content(
+                type="page", space_key=space_key, title=self.new_title
+            )
+            if new_query.size == 1:
+                # new page already exists, move must have been done previously.
+                logger.info(
+                    "Trying to move %s, but it was already moved to %s",
+                    self.title,
+                    self.new_title,
+                )
+                return
+            else:
+                raise RuntimeError(
+                    f"No page found with title {self.title} in space {space_key} to move."
+                )
+        else:
+            old_page = query.results[0]
+
+            parent = (
+                EnsureAncestors(self.ancestor_titles).execute(api_client, space_key)
+                if self.ancestor_titles
+                else None
+            )
+
+            update_request = UpdateContent(
+                title=self.new_title,
+                type="page",
+                version=Version(number=old_page.version.number + 1),
+                ancestors=[Content(id=parent.id)] if parent else None,
+            )
+
+            logger.info(
+                "Moving %s to %s.",
+                [x.title for x in old_page.ancestors[1:]] + [self.title],
+                (self.ancestor_titles if self.ancestor_titles else [])
+                + [self.new_title],
+            )
+            api_client.content.update_content(old_page.id, update_request)
+
+            if old_page.ancestors:
+                # the last entry in ancestors will be the immediate parent
+                CleanupEmptyAncestors(old_page.ancestors[-1].title).execute(
+                    api_client, space_key
+                )
+
+
+class CreatePage(PageAction):
+    """Create a new page under a particular parent (or the space homepage if no parents specified)"""
+
+    def __init__(self, title: str, new_body: str, ancestor_titles: List[str] = []):
+        """Initializes an instance of CreatePage.
+
+        Arguments:
+            title {str} -- The title of the page to create.
+            new_body {str} -- The body of the new page in Confluence storage representation.
+
+        Keyword Arguments:
+            ancestor_titles {List[str]} -- The names of the parents of the new page from root to leaf, excluding the space homepage. (default: {[]})
+        """
+        super().__init__(title)
+        self.new_body = new_body
+        self.ancestor_titles = ancestor_titles if ancestor_titles else []
+
+    def execute(self, api_client: Confluence, space_key: str) -> Content:
+        """Creates a brand new page under a particular parent.  If no parents are specified, Confluence makes the page under the space homepage.
+        If the requested page already exists, this will instead update the existing page.  This ensures this action can be replayed in the event
+        of a failure somewhere else in the Delta.
+
+        Automatically created any ancestor pages that do not already exist.
+
+        Arguments:
+            api_client {Confluence} -- Confluence API client to use for all API actions.
+            space_key {str} -- Space to target all page actions.
+
+        Returns:
+            Content -- The created page.
+        """
+
+        query = super().execute(api_client, space_key)
+        if query.size == 1:
+            logger.info(
+                "Trying to create %s but it already exists, updating instead.",
+                self.title,
+            )
             UpdatePage(self.title, self.new_body, self.ancestor_titles).execute(
                 api_client, space_key
             )
@@ -88,145 +185,212 @@ class CreatePage(PageAction):
                 else None
             )
 
-            create_request = CreateContent()
-            create_request.title = self.title
-            create_request.type = "page"
-            create_request.space = Space()
-            create_request.space.key = space_key
-            create_request.ancestors = [{"id": parent.id}] if parent else None
-            create_request.body = Body()
-            create_request.body.storage = ContentBody()
-            create_request.body.storage.value = self.new_body
-            create_request.body.storage.representation = "storage"
+            create_request = CreateContent(
+                title=self.title,
+                type="page",
+                space=Space(key=space_key),
+                ancestors=[Content(id=parent.id)] if parent else None,
+                body=Body(
+                    storage=ContentBody(value=self.new_body, representation="storage")
+                ),
+            )
 
+            logger.info(
+                "Creating %s",
+                (self.ancestor_titles if self.ancestor_titles else []) + [self.title],
+            )
             return api_client.content.add_content(create_request)
 
 
 class EnsureAncestors(CreatePage):
+    """Creates index pages (which correspond to folders in the file system) recursively ensuring all parents up to the root (space homepage) exist."""
 
     PAGE_BODY_LIST_CHILDREN = '<p><ac:structured-macro ac:name="children" ac:schema-version="2" ac:macro-id="92c7a2c4-5cca-4ecf-81a2-946ef7388c71" /></p>'
 
     def __init__(self, ancestor_titles: List[str]):
+        """Initializes an instance of EnsureAncestors.  This class should not be used for pages with no parents AKA pages
+        whose parent is the space homepage.  The space homepage is assumed to exist and there is no handling for this not being
+        the case.
+
+        Arguments:
+            ancestor_titles {List[str]} -- The names of each parent page in order, excluding the root (space homepage).
+                                           Must not be empty, therefore at least one parent must be specified.
+        """
         super().__init__(
             ancestor_titles[-1], self.PAGE_BODY_LIST_CHILDREN, ancestor_titles[:-1]
         )
 
     def execute(self, api_client: Confluence, space_key: str) -> Content:
-        query = api_client.content.get_content(
-            type="page", space_key=space_key, title=self.title, expand="version"
-        )
-        if query.size > 1:
-            raise RuntimeError(
-                f"More than one result when searching for {self.title} in space {space_key} to create."
-            )
-        elif query.size == 1:
+        """Attempts to create the requested ancestor pages.  Begin by looking for the immediate parent (leaf page).
+        If the leaf already exists, then the process ends.  Otherwise, attempt to create the leaf page, with the page
+        content set to the Child Display macro in Confluence.  Page is created using CreatePage which will end up
+        recursively calling EnsureAncestors.  Hence, this action will recursively create all missing parent pages from
+        root to leaf in this order Child --> Grandchild --> Great Grandchild --> ... --> Leaf.
+
+        Arguments:
+            api_client {Confluence} -- Confluence API client to use for all API actions.
+            space_key {str} -- Space to target all page actions.
+
+        Returns:
+            Content -- The leaf ancestor (whose ID can be specified in ancestors[0].id for a create/update page request)
+        """
+
+        query = super().execute(api_client, space_key)
+        if query.size == 1:
             # ancestor must already exist
+            logger.info(
+                "Ancestor page %s already exists with ID %s.",
+                self.title,
+                query.results[0].id,
+            )
             return query.results[0]
         else:  # query.size == 0
+            logger.info("Ancestor page %s doesn't exist, creating it...")
             return super().execute(api_client, space_key)
 
 
 class UpdatePage(PageAction):
-    def __init__(self, title: str, new_body: str, ancestor_titles: List[str] = None):
-        self.title = title
+    """Updates the content of a page.  Cannot move (change the title or parent) of a page even though Confluence supports this.  Use
+    MovePage if you want to do that."""
+
+    def __init__(self, title: str, new_body: str, ancestor_titles: List[str] = []):
+        """Initializes an instance of UpdatePage.  This class should not be used for moving a page, it is only for changing the content
+        of an existing page.
+
+        Arguments:
+            title {str} -- The title of the page to update.
+            new_body {str} -- The body to assign to the page.  Should be in Confluence storage representation.
+
+        Keyword Arguments:
+            ancestor_titles {List[str]} -- The parents of the targeted page from root to leaf (excluding space homepage).
+                                           Must match current parents in Confluence (default: {[]})
+        """
+        super().__init__(title)
         self.new_body = new_body
-        self.ancestor_titles = ancestor_titles
+        self.ancestor_titles = ancestor_titles if ancestor_titles else []
 
     def execute(self, api_client: Confluence, space_key: str) -> Content:
-        query = api_client.content.get_content(
-            type="page",
-            space_key=space_key,
-            title=self.title,
-            expand="version,ancestors",
-        )
-        if query.size > 1:
-            raise RuntimeError(
-                f"More than one result when searching for {self.title} in space {space_key} to update."
-            )
-        elif query.size == 1:
-            current_ancestors = [x.title for x in query.results[0].ancestors]
+        """Updates the content of an already existing page.  If the page does not exist, this operation silently switches to creating
+        the page instead.  This ensures the action can be replayed in the event of failure somewhere else in the Delta.
+
+        Fails if the ancestors are different from those found in Confluence; this is a sanity check that detects if the wiki is in an
+        unreconcilable state with the file system (as otherwise update does not care what you put for ancestors).
+
+        api_client {Confluence} -- Confluence API client to use for all API actions.
+        space_key {str} -- Space to target all page actions.
+
+        Returns:
+            Content -- The updated page.
+        """
+
+        query = super().execute(api_client, space_key)
+        if query.size == 1:
+            # skip the first ancestor, it's the space home page
+            current_ancestors = [x.title for x in query.results[0].ancestors[1:]]
             assert (
                 self.ancestor_titles == current_ancestors
-            ), "Cannot change ancestors with UpdatePage, use MovePage instead.  {} != {}".format(
+            ), "Cannot change ancestors with UpdatePage, use MovePage instead.  {} != {}.".format(
                 self.ancestor_titles, current_ancestors
             )
 
-            update_request = UpdateContent()
-            update_request.title = self.title
-            update_request.type = "page"
-            update_request.version = {"number": query.results[0].version.number + 1}
-            update_request.ancestors = (
-                [{"id": query.results[0].ancestors[-1].id}]
-                if query.results[0].ancestors
-                else None
+            update_request = UpdateContent(
+                title=self.title,
+                type="page",
+                version=Version(number=query.results[0].version.number + 1),
+                ancestors=[Content(id=query.results[0].ancestors[-1].id)],
+                body=Body(
+                    storage=ContentBody(value=self.new_body, representation="storage")
+                ),
             )
-            update_request.body = Body()
-            update_request.body.storage = ContentBody()
-            update_request.body.storage.value = self.new_body
-            update_request.body.storage.representation = "storage"
 
+            logger.info(
+                "Updating %s with new content.",
+                (self.ancestor_titles if self.ancestor_titles else []) + [self.title],
+            )
             return api_client.content.update_content(
                 query.results[0].id, update_request
             )
         else:  # query.size == 0
+            logger.info(
+                "Trying to update %s but it doesn't exist, creating instead.",
+                self.title,
+            )
             return CreatePage(self.title, self.new_body, self.ancestor_titles)
 
 
 class DeletePage(PageAction):
-    def __init__(self, title: str):
-        self.title = title
+    """Deletes an existing page."""
 
-    def execute(self, api_client: Confluence, space_key: str):
-        query = api_client.content.get_content(
-            type="page", space_key=space_key, title=self.title, expand="ancestors"
-        )
-        if query.size > 1:
-            raise RuntimeError(
-                f"More than one result when searching for {self.title} in space {space_key} to delete."
-            )
-        elif query.size == 0:
+    def execute(self, api_client: Confluence, space_key: str) -> None:
+        """Deletes the page from Confluence.  If the page does not exist then the operation reports success without doing
+        anything.  This ensures that the action can be replayed in the event of failure elsewhere in the delta.
+
+        Automatically cleans up any ancestor pages that no longer have children after the delete.
+
+        Arguments:
+            title {str} -- The title of the page to update.
+            new_body {str} -- The body to assign to the page.  Should be in Confluence storage representation.
+        """
+        query = super().execute(api_client, space_key)
+        if query.size == 0:
             # already gone, don't error
+            logger.info("Trying to delete %s but it's already gone.", self.title)
             return
         else:  # query.size == 1
             page = query.results[0]
+            logger.info(
+                "Deleting %s",
+                ([x.title for x in page.ancestors[1:]] if page.ancestors else [])
+                + [self.title],
+            )
             api_client.content.delete_content(page.id)
             if page.ancestors and len(page.ancestors) > 1:
                 # try to cleanup any parents as they might now be empty..however skip
                 # this step if there aren't any parents, or only 1 parent (that is always the
                 # space homepage, and we don't want to delete that).
-                CleanupEmptyAncestors(
-                    page.ancestors[
-                        -1
-                    ].title  # the last entry in ancestors will be the immediate parent
-                ).execute(api_client, space_key)
+                # (the last entry in ancestors will be the immediate parent)
+                CleanupEmptyAncestors(page.ancestors[-1].title).execute(
+                    api_client, space_key
+                )
 
 
 class CleanupEmptyAncestors(DeletePage):
-    def __init__(self, title: str):
-        self.title = title
+    """Recursively cleans up ancestor pages that no longer have any children.  Should be used after any operations that may "empty out"
+    an ancestor such as a move or a delete."""
 
-    def execute(self, api_client: Confluence, space_key: str):
-        query = api_client.content.get_content(
-            type="page",
-            space_key=space_key,
-            title=self.title,
-            expand="ancestors,childTypes.page",
-        )
-        if query.size > 1:
-            raise RuntimeError(
-                f"More than one result when searching for {self.title} in space {space_key} to delete."
-            )
-        elif query.size == 0:
+    def execute(self, api_client: Confluence, space_key: str) -> None:
+        """Removes the page if it has no more child pages.  It uses DeletePage for this operation
+        which will end up recursively calling this action.  The result is that ancestors will be
+        cleaned up all the way to the root if they become empty in this order: Leaf --> ... -> Great Grandchild
+        --> Grandchild --> Child.
+
+        Arguments:
+            api_client {Confluence} -- Confluence API client to use for all API actions.
+            space_key {str} -- Space to target all page actions.
+        """
+        query = super().execute(api_client, space_key)
+        if query.size == 0:
             # already gone, don't error
+            logger.info(
+                "Cleaning up empty ancestor page %s but it's already gone.", self.title
+            )
             return
         else:  # query.size == 1
             page = query.results[0]
             if not page.childTypes.page.value:
                 # no children, delete self!  this will recursively delete all parents as they empty out too
+                logger.info("Cleaning up empty ancestor page %s...", self.title)
                 super().execute(api_client, space_key)
+            else:
+                logger.info(
+                    "Cleaning up empty ancestor page %s but it still has children.",
+                    self.title,
+                )
 
 
 class Delta(object):
+    """A set of changes to be made to Confluence."""
+
     def __init__(self):
         self.deletes: List[PageAction] = []
         self.start_renames: List[PageAction] = []
@@ -235,6 +399,20 @@ class Delta(object):
         self.finish_renames: List[PageAction] = []
 
     def execute(self, api_client: Confluence, space_key: str):
+        """Executes all of the changes to Confluence that this delta represents.  Operations
+        are applied in a very particular order to ensure correctness in as many situations as possible.
+        Deltas generically cannot be replayed but some tolerance for this has been added to support re-running
+        if Junction fails for any reason (code bug, Confluence failure, network issue, etc).  In cases where
+        Junction detects the wiki in an unreconcilable state the entire Delta will report with a more detailed error.
+
+        In these cases, manual cleanup of the wiki may be necessary to restore service.  This is the key weakness of
+        the Delta API.  On the otherhand, this API avoids reading/downloading more of the wiki than strictly necessary
+        thus making it work well for large wiki spaces.
+
+        Arguments:
+            api_client {Confluence} -- Confluence API client to use for all API actions.
+            space_key {str} -- Space to target all page actions.
+        """
         for_all(self.deletes, lambda x: x.execute(api_client, space_key))
         for_all(self.start_renames, lambda x: x.execute(api_client, space_key))
         for_all(self.adds, lambda x: x.execute(api_client, space_key))
@@ -242,11 +420,24 @@ class Delta(object):
         for_all(self.updates, lambda x: x.execute(api_client, space_key))
 
     @staticmethod
-    def from_modifications(modifications: List[Modification]):
+    def from_modifications(modifications: List[Modification]) -> "Delta":
+        """Builds a Delta from a list of (git) modifications.  Resulting Delta will work against
+        wikis that have been updated and maintained exclusively with Junction, no other guarantees
+        are provided.
+
+        Arguments:
+            modifications {List[Modification]} -- A list of modifications to a filesystem to be realized against Confluence
+
+        Raises:
+            NotImplementedError: A modification that is not supported by the Delta API will report failure.
+
+        Returns:
+            Delta -- A ready-to-execute Delta.
+        """
         me = Delta()
         for mod in modifications:
             title = mod.path.stem
-            ancestors = mod.path.parts[:-1]
+            ancestors = list(mod.path.parts[:-1])
 
             if mod.change_type == ModificationType.ADD:
                 me.adds.append(

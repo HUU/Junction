@@ -9,20 +9,22 @@ BASE_PATH = "content"
 
 
 class ContentApi(object):
-    def __init__(self, api_client):
+    def __init__(self, api_client) -> None:
         self.__api_client = api_client
 
     def add_content(self, content: CreateContent, **kwargs) -> Content:
         response = self.__api_client.post(BASE_PATH, body=content, **kwargs)
         return self.__api_client.decode(response.text, Content)
 
-    def update_content(self, content_id: str, content: UpdateContent, **kwargs):
+    def update_content(
+        self, content_id: str, content: UpdateContent, **kwargs
+    ) -> Content:
         response = self.__api_client.put(
             f"{BASE_PATH}/{content_id}", body=content, **kwargs
         )
         return self.__api_client.decode(response.text, Content)
 
-    def delete_content(self, content_id: str, **kwargs):
+    def delete_content(self, content_id: str, **kwargs) -> None:
         self.__api_client.delete(f"{BASE_PATH}/{content_id}", **kwargs)
 
     def get_content(
@@ -61,6 +63,6 @@ class ContentApi(object):
         )
         return self.__api_client.decode(response.text, ContentArray)
 
-    def get_content_by_id(self, content_id: str, **kwargs):
+    def get_content_by_id(self, content_id: str, **kwargs) -> Content:
         response = self.__api_client.get(f"{BASE_PATH}/{content_id}", **kwargs)
         return self.__api_client.decode(response.text, Content)

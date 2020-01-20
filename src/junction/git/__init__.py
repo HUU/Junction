@@ -1,7 +1,11 @@
+import logging
 from pathlib import Path
 from enum import Enum
 from typing import List
 from git import Repo, Commit, NULL_TREE, Diff, Tree
+
+
+logger = logging.getLogger(__name__)
 
 
 def find_repository_root(path: Path):
@@ -9,9 +13,13 @@ def find_repository_root(path: Path):
 
     def _find_repository_root(path: Path):
         if path.joinpath("./.git").exists():
+            logger.debug("Located .git folder under %s.", path)
             return path
         elif path.parent == path:
             # when at a root, the parent will be the same as path, so we bottomed out; no repository found
+            logger.error(
+                "Searched all parent directories until hitting a root and found no .git folder."
+            )
             return None
         else:
             return _find_repository_root(path.parent)
@@ -85,7 +93,13 @@ class Modification:
             else None
         )
 
-        return Modification(old_path, new_path, change_type, source_code)
+        mod = Modification(old_path, new_path, change_type, source_code)
+        logger.debug(
+            "%s, with %s bytes of source code.",
+            mod,
+            len(source_code) if source_code else 0,
+        )
+        return mod
 
     def __repr__(self):
         return f"{self.change_type} {self.path}"
