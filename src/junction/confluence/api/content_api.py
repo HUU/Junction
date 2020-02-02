@@ -1,3 +1,4 @@
+from junction.confluence.api import _ApiClient
 from junction.confluence.models import (
     Content,
     ContentArray,
@@ -18,8 +19,9 @@ class ContentApi(object):
     Reference https://developer.atlassian.com/cloud/confluence/rest/ for API semantics.
     """
 
-    def __init__(self, api_client) -> None:
+    def __init__(self, api_client: _ApiClient, space_key) -> None:
         self.__api_client = api_client
+        self.__space_key = space_key
 
     def create_content(self, content: CreateContent, **kwargs) -> Content:
         """https://developer.atlassian.com/cloud/confluence/rest/#api-api-content-post"""
@@ -42,7 +44,6 @@ class ContentApi(object):
     def get_content(
         self,
         type: str = None,
-        space_key: str = None,
         title: str = None,
         status: str = None,
         posting_day: str = None,
@@ -55,7 +56,7 @@ class ContentApi(object):
         """https://developer.atlassian.com/cloud/confluence/rest/#api-api-content-get"""
         query_params = {
             "type": type,
-            "spaceKey": space_key,
+            "spaceKey": self.__space_key,
             "title": title,
             "status": status,
             "postingDay": posting_day,

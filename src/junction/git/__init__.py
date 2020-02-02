@@ -27,7 +27,7 @@ def find_repository_root(path: Path) -> Optional[Path]:
             return path
         elif path.parent == path:
             # when at a root, the parent will be the same as path, so we bottomed out; no repository found
-            logger.error(
+            logger.debug(
                 "Searched all parent directories until hitting a root and found no .git folder."
             )
             return None

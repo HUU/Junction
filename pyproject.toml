@@ -17,6 +17,8 @@ markdown-urlize = "^0.2.0"
 markdown-emdash = "^0.1.0"
 gitpython = "^3.0.5"
 click = "^7.0"
+click-log = "^0.3.2"
+colorama = "^0.4.3"
 
 [tool.poetry.dev-dependencies]
 ipykernel = "^5.1.4"
@@ -28,10 +30,6 @@ rope = "^0.16.0"
 
 [tool.poetry.scripts]
 junction = "junction.cli:main"
-
-[build-system]
-requires = ["poetry>=0.12"]
-build-backend = "poetry.masonry.api"
 
 [tool.tox]
 legacy_tox_ini = """
@@ -45,3 +43,8 @@ commands =
     poetry install -v
     poetry run pytest tests/
 """
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
+
