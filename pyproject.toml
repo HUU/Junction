@@ -1,0 +1,47 @@
+[tool.poetry]
+name = "junction"
+version = "0.1.0"
+description = ""
+authors = ["Jim Hughes <jihugh@protonmail.com>"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/HUU/Junction"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+requests = "^2.22.0"
+markdown = "^3.0.1"
+markdownsuperscript = "^2.1.1"
+markdownsubscript = "^2.1.1"
+markdown-urlize = "^0.2.0"
+markdown-emdash = "^0.1.0"
+gitpython = "^3.0.5"
+click = "^7.0"
+
+[tool.poetry.dev-dependencies]
+ipykernel = "^5.1.4"
+notebook = "^6.0.3"
+black = "==19.10b0"
+flake8 = "^3.7.9"
+pre-commit = "^2.0.1"
+rope = "^0.16.0"
+
+[tool.poetry.scripts]
+junction = "junction.cli:main"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+isolated_build = true
+envlist = py38
+
+[testenv]
+whitelist_externals = poetry
+commands =
+    poetry install -v
+    poetry run pytest tests/
+"""
