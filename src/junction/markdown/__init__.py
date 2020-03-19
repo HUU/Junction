@@ -9,6 +9,8 @@ from mdx_urlize import UrlizeExtension
 
 from junction.markdown.codeblocks import CodeBlockExtension
 from junction.markdown.status import StatusExtension
+from junction.markdown.toc import TableOfContentsExtension
+from junction.markdown.children import ChildrenExtension
 
 
 logger = logging.getLogger(__name__)
@@ -23,6 +25,8 @@ junctionMarkdown = Markdown(
         UrlizeExtension(),
         CodeBlockExtension(),
         StatusExtension(),
+        TableOfContentsExtension(),
+        ChildrenExtension(),
     ]
 )
 

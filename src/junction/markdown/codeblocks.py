@@ -6,11 +6,6 @@ import re
 class CodeBlockExtension(Extension):
     """Markdown extension that supports GitHub styled fenced codeblocks with optional language specification.
     For example:
-    ```
-    My code
-    ```
-
-    ...and:
     ```c#
     public static class MyCSharp {
         public static void main(string[] args) {
@@ -21,7 +16,6 @@ class CodeBlockExtension(Extension):
     """
 
     def extendMarkdown(self, md):
-        """ Add FencedBlockPreprocessor to the Markdown instance. """
         md.registerExtension(self)
         md.preprocessors.register(CodeBlockPreprocessor(md), "code_block", 25)
 
@@ -42,9 +36,6 @@ class CodeBlockPreprocessor(Preprocessor):
   </ac:plain-text-body>
 </ac:structured-macro>"""
     LANG_TAG = '\n  <ac:parameter ac:name="language">%s</ac:parameter>'
-
-    def __init__(self, md):
-        super().__init__(md)
 
     def run(self, lines):
         text = "\n".join(lines)
