@@ -8,6 +8,7 @@ from mdx_emdash import EmDashExtension
 from mdx_urlize import UrlizeExtension
 
 from junction.markdown.codeblocks import CodeBlockExtension
+from junction.markdown.status import StatusExtension
 
 
 logger = logging.getLogger(__name__)
@@ -21,6 +22,7 @@ junctionMarkdown = Markdown(
         EmDashExtension(),
         UrlizeExtension(),
         CodeBlockExtension(),
+        StatusExtension(),
     ]
 )
 
