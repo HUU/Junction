@@ -1,3 +1,5 @@
+from typing import List
+from markdown import Markdown
 from markdown.extensions import Extension
 from markdown.blockprocessors import BlockProcessor
 import re
@@ -9,7 +11,7 @@ class TableOfContentsExtension(Extension):
     Example: `:include-toc:`
     """
 
-    def extendMarkdown(self, md):
+    def extendMarkdown(self, md: Markdown) -> None:
         md.registerExtension(self)
         md.parser.blockprocessors.register(
             TableOfContentsBlockProcessor(md.parser), "toc", 25
@@ -21,10 +23,10 @@ class TableOfContentsBlockProcessor(BlockProcessor):
         r"\s*:include-toc:\s*", re.MULTILINE | re.DOTALL | re.VERBOSE
     )
 
-    def test(self, parent, block):
+    def test(self, parent: etree.Element, block: str) -> bool:
         return bool(self.TOC_BLOCK_RE.match(block))
 
-    def run(self, parent, blocks):
+    def run(self, parent: etree.Element, blocks: List[str]):
         blocks.pop(0)
         etree.SubElement(
             parent,
@@ -38,5 +40,5 @@ class TableOfContentsBlockProcessor(BlockProcessor):
         ).tail = "\n"
 
 
-def makeExtension(**kwargs):
+def makeExtension(**kwargs) -> TableOfContentsExtension:
     return TableOfContentsExtension(**kwargs)

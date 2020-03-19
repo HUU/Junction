@@ -1,6 +1,9 @@
+from typing import Tuple
+from markdown import Markdown
 from markdown.extensions import Extension
 from markdown.inlinepatterns import InlineProcessor
 import xml.etree.ElementTree as etree
+import re
 
 
 class StatusExtension(Extension):
@@ -13,7 +16,7 @@ class StatusExtension(Extension):
     ```
     """
 
-    def extendMarkdown(self, md, md_globals):
+    def extendMarkdown(self, md: Markdown) -> None:
         md.inlinePatterns.add("status-red", StatusPattern("red"), "<reference")
         md.inlinePatterns.add("status-yellow", StatusPattern("yellow"), "<reference")
         md.inlinePatterns.add("status-green", StatusPattern("green"), "<reference")
@@ -23,11 +26,11 @@ class StatusExtension(Extension):
 
 
 class StatusPattern(InlineProcessor):
-    def __init__(self, color):
+    def __init__(self, color: str):
         self._color = color
         super().__init__(r"&status-{}:(?P<title>[^;]+);".format(self._color))
 
-    def handleMatch(self, match, data):
+    def handleMatch(self, match: re.Match, data: str) -> Tuple[etree.Element, int, int]:
         el = etree.Element(
             "ac:structured-macro",
             {
@@ -47,5 +50,5 @@ class StatusPattern(InlineProcessor):
         return el, match.start(0), match.end(0)
 
 
-def makeExtension(*args, **kwargs):
-    return StatusExtension(*args, **kwargs)
+def makeExtension(**kwargs) -> StatusExtension:
+    return StatusExtension(**kwargs)

@@ -1,3 +1,5 @@
+from typing import List
+from markdown import Markdown
 from markdown.extensions import Extension
 from markdown.preprocessors import Preprocessor
 import re
@@ -15,7 +17,7 @@ class CodeBlockExtension(Extension):
     ```
     """
 
-    def extendMarkdown(self, md):
+    def extendMarkdown(self, md: Markdown) -> None:
         md.registerExtension(self)
         md.preprocessors.register(CodeBlockPreprocessor(md), "code_block", 25)
 
@@ -37,7 +39,7 @@ class CodeBlockPreprocessor(Preprocessor):
 </ac:structured-macro>"""
     LANG_TAG = '\n  <ac:parameter ac:name="language">%s</ac:parameter>'
 
-    def run(self, lines):
+    def run(self, lines: List[str]) -> List[str]:
         text = "\n".join(lines)
         while match := self.FENCED_BLOCK_RE.search(text):
             lang = ""
@@ -54,5 +56,5 @@ class CodeBlockPreprocessor(Preprocessor):
         return text.split("\n")
 
 
-def makeExtension(**kwargs):
+def makeExtension(**kwargs) -> CodeBlockExtension:
     return CodeBlockExtension(**kwargs)

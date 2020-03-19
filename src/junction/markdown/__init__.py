@@ -31,7 +31,7 @@ junctionMarkdown = Markdown(
 )
 
 
-def markdown_to_storage(text):
+def markdown_to_storage(text) -> str:
     if hasattr(text, "decode"):
         text = text.decode("utf-8", "ignore")
     logger.debug("Compiling markdown to Confluence storage format: %s", text)

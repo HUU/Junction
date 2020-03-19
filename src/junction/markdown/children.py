@@ -1,3 +1,5 @@
+from typing import List
+from markdown import Markdown
 from markdown.extensions import Extension
 from markdown.blockprocessors import BlockProcessor
 import re
@@ -9,7 +11,7 @@ class ChildrenExtension(Extension):
     Example: `:include-children:`
     """
 
-    def extendMarkdown(self, md):
+    def extendMarkdown(self, md: Markdown) -> None:
         md.registerExtension(self)
         md.parser.blockprocessors.register(
             ChildrenBlockProcessor(md.parser), "children", 25
@@ -21,10 +23,10 @@ class ChildrenBlockProcessor(BlockProcessor):
         r"\s*:include-children:\s*", re.MULTILINE | re.DOTALL | re.VERBOSE
     )
 
-    def test(self, parent, block):
+    def test(self, parent: etree.Element, block: str) -> bool:
         return bool(self.BLOCK_RE.match(block))
 
-    def run(self, parent, blocks):
+    def run(self, parent: etree.Element, blocks: List[str]) -> None:
         blocks.pop(0)
         etree.SubElement(
             parent,
@@ -37,5 +39,5 @@ class ChildrenBlockProcessor(BlockProcessor):
         ).tail = "\n"
 
 
-def makeExtension(**kwargs):
+def makeExtension(**kwargs) -> ChildrenExtension:
     return ChildrenExtension(**kwargs)
