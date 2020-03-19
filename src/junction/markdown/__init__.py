@@ -7,6 +7,8 @@ from mdx_subscript import SubscriptExtension
 from mdx_emdash import EmDashExtension
 from mdx_urlize import UrlizeExtension
 
+from junction.markdown.codeblocks import CodeBlockExtension
+
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +20,7 @@ junctionMarkdown = Markdown(
         SubscriptExtension(),
         EmDashExtension(),
         UrlizeExtension(),
+        CodeBlockExtension(),
     ]
 )
 
