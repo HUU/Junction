@@ -11,6 +11,7 @@ from junction.markdown.codeblocks import CodeBlockExtension
 from junction.markdown.status import StatusExtension
 from junction.markdown.toc import TableOfContentsExtension
 from junction.markdown.children import ChildrenExtension
+from junction.markdown.info_panel import InfoPanelExtension
 
 
 logger = logging.getLogger(__name__)
@@ -27,6 +28,7 @@ junctionMarkdown = Markdown(
         StatusExtension(),
         TableOfContentsExtension(),
         ChildrenExtension(),
+        InfoPanelExtension(),
     ]
 )
 
