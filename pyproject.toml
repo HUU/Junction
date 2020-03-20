@@ -21,6 +21,9 @@ classifiers = [
     "Topic :: Text Processing :: Markup :: HTML",
     "Topic :: Software Development :: Version Control :: Git"
 ]
+packages = [
+    { include = "junction", from = "src" },
+]
 
 [tool.poetry.dependencies]
 python = "^3.8"
