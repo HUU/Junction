@@ -70,7 +70,7 @@ Content in the first column | Content in the second column
 
 You can link to other wiki pages by referencing their page titles.  Use normal link syntax, but prepend a `&` like &[this](Page Title).
 
-## Blocks
+## Supported Macros
 
 You can embed the Confluence child pages macro by placing it on its own line:
 
@@ -84,14 +84,15 @@ You can embed the Confluence child pages macro by placing it on its own line:
 
 You can create Confluence status macros (colored pills), including in the middle of the line &status-green:like this;
 
-&status-green:Complete;
-&status-yellow:In Progress;
-&status-grey:Planning;
-&status-red:Failed;
-&status-blue:Unknown;
-&status-purple:Cancelled;
+&status-green:Complete; &status-yellow:In Progress; &status-grey:Planning; &status-red:Failed; &status-blue:Unknown; &status-purple:Cancelled;
 
 ## Info Panels
 
-Info: you can create info panels by prepending a paragraph with one of `Info:`, `Warning:`, `Error:`, or `Success:`.  The prefix will be
-removed and the entire paragraph wrapped in a corresponding info panel (blue, yellow, red, and green respectively).
+Info: You can create info panels by prepending a paragraph with one of `Info:`, `Warning:`, `Error:`, or `Success:`.
+
+Warning: The prefix will be removed from the contents.
+
+Error: You cannot put multiple paragraphs inside an info panel, just a single block of text
+like this.
+
+Success: like other block elements, each info panel must be located on its own line (fenced between two new lines).
