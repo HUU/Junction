@@ -30,7 +30,7 @@ class WikiLinkPattern(LinkInlineProcessor):
         if not handled:
             return None, None, None
 
-        link = etree.Element("ac:link", {"ac:card-appearance": "inline "})
+        link = etree.Element("ac:link", {"ac:card-appearance": "inline"})
         etree.SubElement(
             link,
             "ri:page",
