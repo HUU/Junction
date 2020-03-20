@@ -1,7 +1,7 @@
 import logging
 import click
 import click_log
-from typing import Dict
+from typing import Dict, Optional
 from pathlib import Path
 from git import Repo, Commit
 
@@ -14,16 +14,15 @@ from junction.git import (
     get_modifications,
 )
 from junction.delta import Delta, MovePage, UpdatePage, CreatePage, DeletePage
-from junction.util import for_all
 
 
 class CliContext(object):
-    def __init__(self):
-        self.repo = None
-        self.confluence = None
+    def __init__(self) -> None:
+        self.repo: Optional[Repo] = None
+        self.confluence: Optional[Confluence] = None
 
 
-def __verbosity_count_to_log_level(count):
+def __verbosity_count_to_log_level(count: int) -> int:
     if count <= 0:
         return logging.ERROR
     elif count == 1:
@@ -83,7 +82,7 @@ def main(
     ctx.obj = context
 
 
-def _validate_git_dir(ctx: click.Context, param: str, value: click.Path) -> Path:
+def _validate_git_dir(ctx: click.Context, param: click.Parameter, value: str) -> Path:
     path = Path(value)
     git_root = find_repository_root(path)
     if git_root is None:
@@ -95,7 +94,7 @@ def _validate_git_dir(ctx: click.Context, param: str, value: click.Path) -> Path
         return path
 
 
-def _validate_commitish(ctx: click.Context, param: str, value: str) -> str:
+def _validate_commitish(ctx: click.Context, param: click.Parameter, value: str) -> str:
     try:
         if ctx.obj.repo.commit(value):
             return value
@@ -107,7 +106,7 @@ def _validate_commitish(ctx: click.Context, param: str, value: str) -> str:
         )
 
 
-def _validate_branch(ctx: click.Context, param: str, value: str) -> str:
+def _validate_branch(ctx: click.Context, param: click.Parameter, value: str) -> str:
     if value in ctx.obj.repo.heads:
         return value
     else:
@@ -155,6 +154,7 @@ def delta(
     [SINCE] must be a valid commitish within the targeted git repository and should be part of the history
     of [BRANCH] i.e. you can get from SINCE to the HEAD of [BRANCH].
     """
+
     filter_path = Path(content_path) if content_path else git_dir
     commits = find_commits_on_branch_after(branch, since, my_ctx.repo)
     deltas = {
@@ -167,10 +167,16 @@ def delta(
     if dry_run:
         __pretty_print_deltas(deltas)
     else:
-        for_all(deltas.values(), lambda delta: delta.execute(my_ctx.confluence))
+        if my_ctx.confluence:
+            for delta in deltas.values():
+                delta.execute(my_ctx.confluence)
+        else:
+            raise RuntimeError(
+                "Confluence API client was not setup, but this should never happen; file a bug."
+            )
 
 
-def __pretty_print_deltas(deltas: Dict[Commit, Delta]):
+def __pretty_print_deltas(deltas: Dict[Commit, Delta]) -> None:
     for commit, delta in deltas.items():
 
         all_operations = (

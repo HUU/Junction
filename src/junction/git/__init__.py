@@ -1,7 +1,7 @@
 import logging
 from pathlib import Path
 from enum import Enum
-from typing import List, Optional, Generator
+from typing import List, Optional, Generator, Union, Iterable
 from git import Repo, Commit, NULL_TREE, Diff, Tree
 
 
@@ -21,7 +21,7 @@ def find_repository_root(path: Path) -> Optional[Path]:
 
     path = path.resolve()
 
-    def _find_repository_root(path: Path):
+    def _find_repository_root(path: Path) -> Optional[Path]:
         if path.joinpath("./.git").exists():
             logger.debug("Located .git folder under %s.", path)
             return path
@@ -78,16 +78,16 @@ class Modification:
 
     def __init__(
         self,
-        old_path: Optional[str],
-        new_path: Optional[str],
+        old_path: Optional[Union[str, Path]],
+        new_path: Optional[Union[str, Path]],
         change_type: ModificationType,
         source_code: Optional[str] = None,
     ):
         """Initializes an instance of Modification.
 
         Arguments:
-            old_path {Optional[str]} -- The original path to the modified file.  May be None for all modifications except renames.
-            new_path {Optional[str]} -- The current path to the modified file.  May be None if old_path is set.
+            old_path {Optional[Union[str, Path]]} -- The original path to the modified file.  May be None for all modifications except renames.
+            new_path {Optional[Union[str, Path]] -- The current path to the modified file.  May be None if old_path is set.
             change_type {ModificationType} -- The modification made to this file.
 
         Keyword Arguments:
@@ -157,7 +157,7 @@ class Modification:
         )
         return mod
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self.change_type} {self.path}"
 
 
@@ -181,7 +181,7 @@ def get_modifications(commit: Commit) -> List[Modification]:
 
 
 def filter_modifications_to_folder(
-    modifications: List[Modification], folder: Path
+    modifications: Iterable[Modification], folder: Path
 ) -> Generator[Modification, None, None]:
     """Filters modifications to only those within a given folder.  It rewrites all paths in the modifications to be
     relative to the specified folder.  That is, if a modification is to "foobar/hello.md" and folder is set to "foobar/"
@@ -197,16 +197,26 @@ def filter_modifications_to_folder(
     """
 
     for mod in modifications:
-        new_path_in_folder = folder in mod.path.parents
+        new_path_in_folder = folder in mod.path.parents if mod.path else False
         old_path_in_folder = (
             folder in mod.previous_path.parents if mod.previous_path else False
         )
         if new_path_in_folder or old_path_in_folder:
+
+            if new_path_in_folder and not old_path_in_folder and mod.previous_path:
+                modification_type = ModificationType.ADD
+            elif not new_path_in_folder and old_path_in_folder and mod.previous_path:
+                modification_type = ModificationType.DELETE
+            else:
+                modification_type = mod.change_type
+
             yield Modification(
                 mod.previous_path.relative_to(folder)
-                if old_path_in_folder
-                else mod.previous_path,
-                mod.path.relative_to(folder) if new_path_in_folder else mod.new_path,
-                mod.change_type,
+                if mod.previous_path and old_path_in_folder
+                else None,
+                mod.path.relative_to(folder)
+                if mod.path and new_path_in_folder
+                else None,
+                modification_type,
                 mod.source_code,
             )

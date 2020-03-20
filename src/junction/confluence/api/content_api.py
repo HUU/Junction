@@ -1,3 +1,5 @@
+from typing import Any
+
 from junction.confluence.api import _ApiClient
 from junction.confluence.models import (
     Content,
@@ -19,17 +21,17 @@ class ContentApi(object):
     Reference https://developer.atlassian.com/cloud/confluence/rest/ for API semantics.
     """
 
-    def __init__(self, api_client: _ApiClient, space_key) -> None:
+    def __init__(self, api_client: _ApiClient, space_key: str) -> None:
         self.__api_client = api_client
         self.__space_key = space_key
 
-    def create_content(self, content: CreateContent, **kwargs) -> Content:
+    def create_content(self, content: CreateContent, **kwargs: Any) -> Content:
         """https://developer.atlassian.com/cloud/confluence/rest/#api-api-content-post"""
         response = self.__api_client.post(BASE_PATH, body=content, **kwargs)
         return self.__api_client.decode(response.text, Content)
 
     def update_content(
-        self, content_id: str, content: UpdateContent, **kwargs
+        self, content_id: str, content: UpdateContent, **kwargs: Any
     ) -> Content:
         """https://developer.atlassian.com/cloud/confluence/rest/#api-api-content-id-put"""
         response = self.__api_client.put(
@@ -37,7 +39,7 @@ class ContentApi(object):
         )
         return self.__api_client.decode(response.text, Content)
 
-    def delete_content(self, content_id: str, **kwargs) -> None:
+    def delete_content(self, content_id: str, **kwargs: Any) -> None:
         """https://developer.atlassian.com/cloud/confluence/rest/#api-api-content-id-delete"""
         self.__api_client.delete(f"{BASE_PATH}/{content_id}", **kwargs)
 
@@ -51,7 +53,7 @@ class ContentApi(object):
         trigger: str = None,
         start: int = 0,
         limit: int = 25,
-        **kwargs,
+        **kwargs: Any,
     ) -> ContentArray:
         """https://developer.atlassian.com/cloud/confluence/rest/#api-api-content-get"""
         query_params = {
@@ -77,7 +79,7 @@ class ContentApi(object):
         )
         return self.__api_client.decode(response.text, ContentArray)
 
-    def get_content_by_id(self, content_id: str, **kwargs) -> Content:
+    def get_content_by_id(self, content_id: str, **kwargs: Any) -> Content:
         """https://developer.atlassian.com/cloud/confluence/rest/#api-api-content-id-get"""
         response = self.__api_client.get(f"{BASE_PATH}/{content_id}", **kwargs)
         return self.__api_client.decode(response.text, Content)

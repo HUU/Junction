@@ -33,7 +33,7 @@ def discriminator(matcher: Callable[[dict], bool]) -> Callable[[type], type]:
         Callable[[type], type] -- Decorator function that records the discriminator but otherwise does not modify the annotated class at all.
     """
 
-    def discriminator_decorator(klass):
+    def discriminator_decorator(klass: type) -> type:
         DISCRIMINATORS_BY_CLASS[klass] = matcher
         return klass
 

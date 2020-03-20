@@ -27,7 +27,7 @@ way to replicate that procedure.
 
 import logging
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Iterable, Any, cast
 from uuid import uuid4
 
 from junction.markdown import markdown_to_storage
@@ -39,13 +39,19 @@ from junction.confluence.models import (
     CreateContent,
     Space,
     Content,
+    ContentArray,
+    ContentPage,
     Version,
 )
 from junction.git import Modification, ModificationType
-from junction.util import for_all
+from junction.util import for_all, JunctionError
 
 
 logger = logging.getLogger(__name__)
+
+
+class DeltaError(JunctionError):
+    pass
 
 
 class PageAction(ABC):
@@ -61,18 +67,18 @@ class PageAction(ABC):
         self.title = title
 
     @abstractmethod
-    def execute(self, api_client: Confluence):
+    def execute(self, api_client: Confluence) -> Any:
         pass
 
-    def fetch_target_page(self, api_client):
+    def fetch_target_page(self, api_client: Confluence) -> ContentArray[ContentPage]:
         query = api_client.content.get_content(
             type="page", title=self.title, expand="version,ancestors,childTypes.page",
         )
-        if query.size > 1:
+        if query.size and query.size > 1:
             raise RuntimeError(
                 f"More than one result when searching for {self.title} to update; this should never happen, something strange is happening."
             )
-        return query
+        return cast(ContentArray[ContentPage], query)
 
 
 class MovePage(PageAction):
@@ -142,19 +148,33 @@ class MovePage(PageAction):
             update_request = UpdateContent(
                 title=self.new_title,
                 type="page",
-                version=Version(number=old_page.version.number + 1),
+                version=Version(
+                    number=old_page.version.number + 1
+                    if old_page.version and old_page.version.number
+                    else 2
+                ),
                 ancestors=[Content(id=parent.id)] if parent else None,
             )
 
-            logger.info(
-                "Moving %s to %s.",
-                [x.title for x in old_page.ancestors[1:]] + [self.title],
-                (self.ancestor_titles if self.ancestor_titles else [])
-                + [self.new_title],
-            )
-            api_client.content.update_content(old_page.id, update_request)
+            if old_page.id:
+                logger.info(
+                    "Moving %s to %s.",
+                    (
+                        [x.title for x in old_page.ancestors[1:]]
+                        if old_page.ancestors
+                        else []
+                    )
+                    + [self.title],
+                    (self.ancestor_titles if self.ancestor_titles else [])
+                    + [self.new_title],
+                )
+                api_client.content.update_content(old_page.id, update_request)
+            else:
+                raise JunctionError(
+                    "Fatal error: unable to move page because its ID was unexpectedly empty.  This indicates Junction has a bug and hence has aborted the current operation."
+                )
 
-            if old_page.ancestors:
+            if old_page.ancestors and old_page.ancestors[-1].title:
                 # the last entry in ancestors will be the immediate parent
                 CleanupEmptyAncestors(old_page.ancestors[-1].title).execute(api_client)
 
@@ -196,7 +216,7 @@ class CreatePage(PageAction):
                 "Trying to create %s but it already exists, updating instead.",
                 self.title,
             )
-            UpdatePage(self.title, self.new_body, self.ancestor_titles).execute(
+            return UpdatePage(self.title, self.new_body, self.ancestor_titles).execute(
                 api_client
             )
         else:  # query.size == 0
@@ -304,8 +324,11 @@ class UpdatePage(PageAction):
 
         query = self.fetch_target_page(api_client)
         if query.size == 1:
+            existing = query.results[0]
             # skip the first ancestor, it's the space home page
-            current_ancestors = [x.title for x in query.results[0].ancestors[1:]]
+            current_ancestors = (
+                [x.title for x in existing.ancestors[1:]] if existing.ancestors else []
+            )
             assert (
                 self.ancestor_titles == current_ancestors
             ), "Cannot change ancestors with UpdatePage, use MovePage instead.  {} != {}.".format(
@@ -315,26 +338,38 @@ class UpdatePage(PageAction):
             update_request = UpdateContent(
                 title=self.title,
                 type="page",
-                version=Version(number=query.results[0].version.number + 1),
-                ancestors=[Content(id=query.results[0].ancestors[-1].id)],
+                version=Version(
+                    number=existing.version.number + 1
+                    if existing.version and existing.version.number
+                    else 2
+                ),
+                ancestors=[Content(id=existing.ancestors[-1].id)]
+                if existing.ancestors
+                else [],
                 body=Body(
                     storage=ContentBody(value=self.new_body, representation="storage")
                 ),
             )
 
-            logger.info(
-                "Updating %s with new content.",
-                (self.ancestor_titles if self.ancestor_titles else []) + [self.title],
-            )
-            return api_client.content.update_content(
-                query.results[0].id, update_request
-            )
+            if existing.id:
+                logger.info(
+                    "Updating %s with new content.",
+                    (self.ancestor_titles if self.ancestor_titles else [])
+                    + [self.title],
+                )
+                return api_client.content.update_content(existing.id, update_request)
+            else:
+                raise JunctionError(
+                    "Fatal error: unable to update page because its ID was unexpectedly empty.  This indicates Junction has a bug and hence has aborted the current operation."
+                )
         else:  # query.size == 0
             logger.info(
                 "Trying to update %s but it doesn't exist, creating instead.",
                 self.title,
             )
-            return CreatePage(self.title, self.new_body, self.ancestor_titles)
+            return CreatePage(self.title, self.new_body, self.ancestor_titles).execute(
+                api_client
+            )
 
 
 class DeletePage(PageAction):
@@ -356,13 +391,14 @@ class DeletePage(PageAction):
             return
         else:  # query.size == 1
             page = query.results[0]
-            logger.info(
-                "Deleting %s",
-                ([x.title for x in page.ancestors[1:]] if page.ancestors else [])
-                + [self.title],
-            )
-            api_client.content.delete_content(page.id)
-            if page.ancestors and len(page.ancestors) > 1:
+            if page.id:
+                logger.info(
+                    "Deleting %s",
+                    ([x.title for x in page.ancestors[1:]] if page.ancestors else [])
+                    + [self.title],
+                )
+                api_client.content.delete_content(page.id)
+            if page.ancestors and page.ancestors[-1].title:
                 # try to cleanup any parents as they might now be empty..however skip
                 # this step if there aren't any parents, or only 1 parent (that is always the
                 # space homepage, and we don't want to delete that).
@@ -392,7 +428,11 @@ class CleanupEmptyAncestors(DeletePage):
             return
         else:  # query.size == 1
             page = query.results[0]
-            if not page.childTypes.page.value:
+            if (
+                not page.childTypes
+                or not page.childTypes.page
+                or not page.childTypes.page.value
+            ):
                 # no children, delete self!  this will recursively delete all parents as they empty out too
                 logger.info("Cleaning up empty ancestor page %s...", self.title)
                 super().execute(api_client)
@@ -406,14 +446,14 @@ class CleanupEmptyAncestors(DeletePage):
 class Delta(object):
     """A set of changes to be made to Confluence."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.deletes: List[PageAction] = []
         self.start_renames: List[PageAction] = []
         self.updates: List[PageAction] = []
         self.adds: List[PageAction] = []
         self.finish_renames: List[PageAction] = []
 
-    def execute(self, api_client: Confluence):
+    def execute(self, api_client: Confluence) -> None:
         """Executes all of the changes to Confluence that this delta represents.  Operations
         are applied in a very particular order to ensure correctness in as many situations as possible.
         Deltas generically cannot be replayed but some tolerance for this has been added to support re-running
@@ -434,7 +474,7 @@ class Delta(object):
         for_all(self.updates, lambda x: x.execute(api_client))
 
     @staticmethod
-    def from_modifications(modifications: List[Modification]) -> "Delta":
+    def from_modifications(modifications: Iterable[Modification]) -> "Delta":
         """Builds a Delta from a list of (git) modifications.  Resulting Delta will work against
         wikis that have been updated and maintained exclusively with Junction, no other guarantees
         are provided.
@@ -450,6 +490,9 @@ class Delta(object):
         """
         me = Delta()
         for mod in modifications:
+            if not mod.path:
+                continue
+
             title = mod.path.stem
             ancestors = list(mod.path.parts[:-1])
 
@@ -463,7 +506,7 @@ class Delta(object):
                 )
             elif mod.change_type == ModificationType.DELETE:
                 me.deletes.append(DeletePage(title))
-            elif mod.change_type == ModificationType.RENAME:
+            elif mod.change_type == ModificationType.RENAME and mod.previous_path:
                 old_title = mod.previous_path.stem
                 temporary_title = f"{uuid4()}_{old_title}"
                 me.start_renames.append(MovePage(old_title, temporary_title))

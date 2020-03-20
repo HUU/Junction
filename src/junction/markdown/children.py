@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Any
 from markdown import Markdown
 from markdown.extensions import Extension
 from markdown.blockprocessors import BlockProcessor
@@ -39,5 +39,5 @@ class ChildrenBlockProcessor(BlockProcessor):
         ).tail = "\n"
 
 
-def makeExtension(**kwargs) -> ChildrenExtension:
+def makeExtension(**kwargs: Any) -> ChildrenExtension:
     return ChildrenExtension(**kwargs)

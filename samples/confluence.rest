@@ -3,7 +3,7 @@
 @authorization = Basic {{username}} {{password}}
 
 ###
-GET https://jihugh.atlassian.net/wiki/rest/api/content?spaceKey=NS&type=page&title=Blocks&expand=body.storage
+GET https://jihugh.atlassian.net/wiki/rest/api/content?spaceKey=NS&type=page&title=Links&expand=body.storage
 Authorization: {{authorization}}
 
 ###
@@ -16,14 +16,14 @@ X-Atlassian-Token: no-check
 Content-Type: application/json
 
 {
-  "title": "New Page",
+  "title": "Test Links Page 3",
   "type": "page",
   "space": {
     "key": "NS"
   },
   "body": {
     "storage": {
-      "value": "Hello World",
+      "value": "<p><ac:link ac:card-appearance=\"inline\"><ri:page ri:content-title=\"Not Yet\" ri:version-at-save=\"1\"></ri:page><ac:link-body>Not Yet</ac:link-body></ac:link></p>",
       "representation": "storage"
     }
   }

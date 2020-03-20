@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Any
 from markdown import Markdown
 from markdown.extensions import Extension
 from markdown.preprocessors import Preprocessor
@@ -56,5 +56,5 @@ class CodeBlockPreprocessor(Preprocessor):
         return text.split("\n")
 
 
-def makeExtension(**kwargs) -> CodeBlockExtension:
+def makeExtension(**kwargs: Any) -> CodeBlockExtension:
     return CodeBlockExtension(**kwargs)

@@ -1,11 +1,26 @@
 [tool.poetry]
-name = "junction"
+name = "confluence-junction"
 version = "0.1.0"
-description = ""
-authors = ["Jim Hughes <jihugh@protonmail.com>"]
+description = "Publish to and manage Confluence spaces with markdown files tracked in Git."
+authors = ["HUU <readabook123@protonmail.com>"]
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/HUU/Junction"
+keywords = ["confluence", "markdown", "git", "sync", "convert"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Topic :: Documentation",
+    "Topic :: Office/Business",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Text Editors :: Text Processing",
+    "Topic :: Text Processing :: Markup :: HTML",
+    "Topic :: Software Development :: Version Control :: Git"
+]
 
 [tool.poetry.dependencies]
 python = "^3.8"
@@ -29,6 +44,7 @@ pre-commit = "^2.0.1"
 rope = "^0.16.0"
 pyflakes = {git = "https://github.com/pycqa/pyflakes"}
 pycodestyle = {git = "https://github.com/pycqa/pycodestyle"}
+mypy = "^0.770"
 
 [tool.poetry.scripts]
 junction = "junction.cli:main"
@@ -49,4 +65,3 @@ commands =
 [build-system]
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
-

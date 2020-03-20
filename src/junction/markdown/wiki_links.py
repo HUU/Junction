@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Optional, Any
 from markdown import Markdown
 from markdown.extensions import Extension
 from markdown.inlinepatterns import LinkInlineProcessor
@@ -17,10 +17,12 @@ class WikiLinkExtension(Extension):
 
 
 class WikiLinkPattern(LinkInlineProcessor):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(r"\&\[", *args, **kwargs)
 
-    def handleMatch(self, m: re.Match, data: str) -> Tuple[etree.Element, int, int]:
+    def handleMatch(
+        self, m: re.Match, data: str
+    ) -> Tuple[Optional[etree.Element], Optional[int], Optional[int]]:
         text, index, handled = self.getText(data, m.end(0))
 
         if not handled:
@@ -44,5 +46,5 @@ class WikiLinkPattern(LinkInlineProcessor):
         return link, m.start(0), index
 
 
-def makeExtension(**kwargs) -> WikiLinkExtension:
+def makeExtension(**kwargs: Any) -> WikiLinkExtension:
     return WikiLinkExtension(**kwargs)

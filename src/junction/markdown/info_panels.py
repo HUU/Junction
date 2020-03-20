@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Any
 from markdown import Markdown
 from markdown.extensions import Extension
 from markdown.blockprocessors import BlockProcessor
@@ -52,7 +52,9 @@ class InfoPanelExtension(Extension):
 
 
 class InfoPanelBlockProcessor(BlockProcessor):
-    def __init__(self, prefix: str, name: str, macro_id: str, *args, **kwargs):
+    def __init__(
+        self, prefix: str, name: str, macro_id: str, *args: Any, **kwargs: Any
+    ):
         self._prefix = prefix
         self._block_re = re.compile(
             r"\s*{}.*".format(prefix), re.MULTILINE | re.DOTALL | re.VERBOSE
@@ -81,5 +83,5 @@ class InfoPanelBlockProcessor(BlockProcessor):
         info_panel.tail = "\n"
 
 
-def makeExtension(**kwargs) -> InfoPanelExtension:
+def makeExtension(**kwargs: Any) -> InfoPanelExtension:
     return InfoPanelExtension(**kwargs)

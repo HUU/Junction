@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Any
 from markdown import Markdown
 from markdown.extensions import Extension
 from markdown.blockprocessors import BlockProcessor
@@ -26,7 +26,7 @@ class TableOfContentsBlockProcessor(BlockProcessor):
     def test(self, parent: etree.Element, block: str) -> bool:
         return bool(self.TOC_BLOCK_RE.match(block))
 
-    def run(self, parent: etree.Element, blocks: List[str]):
+    def run(self, parent: etree.Element, blocks: List[str]) -> None:
         blocks.pop(0)
         etree.SubElement(
             parent,
@@ -40,5 +40,5 @@ class TableOfContentsBlockProcessor(BlockProcessor):
         ).tail = "\n"
 
 
-def makeExtension(**kwargs) -> TableOfContentsExtension:
+def makeExtension(**kwargs: Any) -> TableOfContentsExtension:
     return TableOfContentsExtension(**kwargs)

@@ -1,5 +1,7 @@
 import logging
 
+from typing import Union, Optional
+
 from markdown import Markdown
 from markdown.extensions.sane_lists import SaneListExtension
 from markdown.extensions.tables import TableExtension
@@ -37,9 +39,12 @@ junctionMarkdown = Markdown(
 )
 
 
-def markdown_to_storage(text) -> str:
-    if hasattr(text, "decode"):
+def markdown_to_storage(text: Optional[Union[str, bytes]]) -> str:
+    if text is None:
+        return ""
+    elif isinstance(text, bytes):
         text = text.decode("utf-8", "ignore")
+
     logger.debug("Compiling markdown to Confluence storage format: %s", text)
     result = junctionMarkdown.convert(text)
     junctionMarkdown.reset()

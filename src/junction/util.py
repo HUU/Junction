@@ -1,4 +1,4 @@
-from typing import Callable, TypeVar, List
+from typing import Callable, TypeVar, Iterable, Any
 
 from collections import OrderedDict
 from collections.abc import Mapping
@@ -6,7 +6,11 @@ from collections.abc import Mapping
 T = TypeVar("T")
 
 
-def for_all(items: List[T], action: Callable[[T], None]):
+class JunctionError(Exception):
+    pass
+
+
+def for_all(items: Iterable[T], action: Callable[[T], None]) -> None:
     """Runs a particular function for every item in a list.
 
     Arguments:
@@ -23,7 +27,7 @@ class DotDict(OrderedDict):
     assignment via object properties rather than dict indexing.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         # we could just call super(DotDict, self).__init__(*args, **kwargs)
         # but that won't get us nested dotdict objects
         od = OrderedDict(*args, **kwargs)
@@ -34,13 +38,13 @@ class DotDict(OrderedDict):
                 value = val
             self[key] = value
 
-    def __delattr__(self, name):
+    def __delattr__(self, name: Any) -> None:
         try:
             del self[name]
         except KeyError as ex:
             raise AttributeError(f"No attribute called: {name}") from ex
 
-    def __getattr__(self, k):
+    def __getattr__(self, k: Any) -> Any:
         try:
             return self[k]
         except KeyError as ex:

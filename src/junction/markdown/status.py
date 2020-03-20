@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Any
 from markdown import Markdown
 from markdown.extensions import Extension
 from markdown.inlinepatterns import InlineProcessor
@@ -50,5 +50,5 @@ class StatusPattern(InlineProcessor):
         return el, match.start(0), match.end(0)
 
 
-def makeExtension(**kwargs) -> StatusExtension:
+def makeExtension(**kwargs: Any) -> StatusExtension:
     return StatusExtension(**kwargs)

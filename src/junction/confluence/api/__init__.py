@@ -1,13 +1,16 @@
 import requests
 import logging
 from urllib.parse import urlencode, urljoin
-from typing import Union, Sequence
+from typing import Union, Sequence, Mapping, Any, Tuple, TypeVar, Type
 
 from junction.confluence.models import ApiModel
 from junction.confluence.models.json import ApiEncoder, ApiDecoder
 
 
 logger = logging.getLogger(__name__)
+
+
+T = TypeVar("T", bound=ApiModel)
 
 
 class _ApiClient(object):
@@ -22,16 +25,21 @@ class _ApiClient(object):
         self.api_url = api_url + "/" if not api_url.endswith("/") else api_url
         self.__json_encoder = ApiEncoder()
 
-    def decode(self, s: str, klass: type):
+    def decode(self, s: str, klass: Type[T]) -> T:
         return ApiDecoder(klass).decode(s)
 
     def get(
         self,
         resource_path: str,
-        query_params: Union[dict, Sequence[tuple]] = None,
+        query_params: Union[
+            Mapping[Any, Any],
+            Mapping[Any, Sequence[Any]],
+            Sequence[Tuple[Any, Any]],
+            Sequence[Tuple[Any, Sequence[Any]]],
+        ] = None,
         headers: dict = None,
         body: ApiModel = None,
-    ):
+    ) -> requests.Response:
         return self.__call_api(
             resource_path, "GET", query_params=query_params, headers=headers, body=body
         )
@@ -39,10 +47,15 @@ class _ApiClient(object):
     def post(
         self,
         resource_path: str,
-        query_params: Union[dict, Sequence[tuple]] = None,
+        query_params: Union[
+            Mapping[Any, Any],
+            Mapping[Any, Sequence[Any]],
+            Sequence[Tuple[Any, Any]],
+            Sequence[Tuple[Any, Sequence[Any]]],
+        ] = None,
         headers: dict = None,
         body: ApiModel = None,
-    ):
+    ) -> requests.Response:
         return self.__call_api(
             resource_path, "POST", query_params=query_params, headers=headers, body=body
         )
@@ -50,10 +63,15 @@ class _ApiClient(object):
     def put(
         self,
         resource_path: str,
-        query_params: Union[dict, Sequence[tuple]] = None,
+        query_params: Union[
+            Mapping[Any, Any],
+            Mapping[Any, Sequence[Any]],
+            Sequence[Tuple[Any, Any]],
+            Sequence[Tuple[Any, Sequence[Any]]],
+        ] = None,
         headers: dict = None,
         body: ApiModel = None,
-    ):
+    ) -> requests.Response:
         return self.__call_api(
             resource_path, "PUT", query_params=query_params, headers=headers, body=body
         )
@@ -61,10 +79,15 @@ class _ApiClient(object):
     def delete(
         self,
         resource_path: str,
-        query_params: Union[dict, Sequence[tuple]] = None,
+        query_params: Union[
+            Mapping[Any, Any],
+            Mapping[Any, Sequence[Any]],
+            Sequence[Tuple[Any, Any]],
+            Sequence[Tuple[Any, Sequence[Any]]],
+        ] = None,
         headers: dict = None,
         body: ApiModel = None,
-    ):
+    ) -> requests.Response:
         return self.__call_api(
             resource_path,
             "DELETE",
@@ -77,10 +100,15 @@ class _ApiClient(object):
         self,
         resource_path: str,
         method: str,
-        query_params: Union[dict, Sequence[tuple]] = None,
+        query_params: Union[
+            Mapping[Any, Any],
+            Mapping[Any, Sequence[Any]],
+            Sequence[Tuple[Any, Any]],
+            Sequence[Tuple[Any, Sequence[Any]]],
+        ] = None,
         headers: dict = None,
         body: ApiModel = None,
-    ):
+    ) -> requests.Response:
 
         headers = headers or {}
         headers.update(self.default_headers)
