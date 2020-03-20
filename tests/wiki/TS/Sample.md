@@ -19,7 +19,7 @@ Sometimes you want bullet points:
 Alternatively,
 
 - Dashes work just as well
-- And if you have sub points, put two spaces before the dash or star:
+- And if you have sub points, put four spaces before the dash or star:
     - Like this
     - And this
 
@@ -30,6 +30,8 @@ Sometimes it's useful to have different levels of headings to structure your doc
 ### This is a third-tier heading
 
 You can use one `#` all the way up to `######` six for different heading sizes.
+
+# Blockquotes
 
 If you'd like to quote someone, use the > character before the line:
 

@@ -14,6 +14,7 @@ from junction.git import (
     get_modifications,
 )
 from junction.delta import Delta, MovePage, UpdatePage, CreatePage, DeletePage
+from junction.util import for_all
 
 
 class CliContext(object):
@@ -166,8 +167,7 @@ def delta(
     if dry_run:
         __pretty_print_deltas(deltas)
     else:
-        for delta in deltas:
-            delta.execute(my_ctx.confluence)
+        for_all(deltas.values(), lambda delta: delta.execute(my_ctx.confluence))
 
 
 def __pretty_print_deltas(deltas: Dict[Commit, Delta]):
