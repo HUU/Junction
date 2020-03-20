@@ -9,6 +9,7 @@ from typing import (
     Union,
     Generic,
     TypeVar,
+    cast,
 )
 
 from junction.util import DotDict
@@ -69,8 +70,17 @@ class ApiDecoder(Generic[T]):
         return self.__marshal_to_class(raw_dict, self.root_klass)
 
     def __marshal_to_class(self, dict: dict, klass: Type[ApiModel]) -> T:
-        new_obj = get_matching_subclass(klass, dict)()
-        hints = get_type_hints(klass)
+        target_klass = cast(
+            Type[ApiModel],
+            (
+                get_origin(klass)
+                if get_origin(klass)
+                and issubclass(cast(type, get_origin(klass)), ApiModel)
+                else klass
+            ),
+        )  # unwrap Generics
+        new_obj = get_matching_subclass(target_klass, dict)()
+        hints = get_type_hints(target_klass)
         for key, value in dict.items():
             if hasattr(new_obj, key):
                 if key not in hints:
@@ -89,8 +99,11 @@ class ApiDecoder(Generic[T]):
 
     def __marshal_hinted_class(self, value: Any, hint: Any) -> Any:
         if get_origin(hint) is Union and (hint_args := get_args(hint))[1] is NoneType:  # type: ignore
-            # this is was an Optional[T]..unwrap the real type:
+            # this is an Optional[T]..unwrap the real type:
             hint = hint_args[0]
+        elif hasattr(hint, "__bound__"):
+            # this is a TypeVar (probably from a generic), fetch the type binding information
+            hint = hint.__bound__
 
         if get_origin(hint) is list and issubclass(value.__class__, Iterable):
             list_item_hint = get_args(hint)[0]

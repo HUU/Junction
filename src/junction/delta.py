@@ -27,7 +27,7 @@ way to replicate that procedure.
 
 import logging
 from abc import ABC, abstractmethod
-from typing import List, Iterable, Any, cast
+from typing import List, Iterable, Any
 from uuid import uuid4
 
 from junction.markdown import markdown_to_storage
@@ -71,14 +71,14 @@ class PageAction(ABC):
         pass
 
     def fetch_target_page(self, api_client: Confluence) -> ContentArray[ContentPage]:
-        query = api_client.content.get_content(
-            type="page", title=self.title, expand="version,ancestors,childTypes.page",
+        query = api_client.content.get_page(
+            title=self.title, expand="version,ancestors,childTypes.page"
         )
         if query.size and query.size > 1:
             raise RuntimeError(
                 f"More than one result when searching for {self.title} to update; this should never happen, something strange is happening."
             )
-        return cast(ContentArray[ContentPage], query)
+        return query
 
 
 class MovePage(PageAction):
@@ -123,9 +123,7 @@ class MovePage(PageAction):
                 self.title,
                 self.new_title,
             )
-            new_query = api_client.content.get_content(
-                type="page", title=self.new_title
-            )
+            new_query = api_client.content.get_page(title=self.new_title)
             if new_query.size == 1:
                 # new page already exists, move must have been done previously.
                 logger.info(
