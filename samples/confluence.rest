@@ -3,8 +3,11 @@
 @authorization = Basic {{username}} {{password}}
 
 ###
-GET https://jihugh.atlassian.net/wiki/rest/api/content?spaceKey=NS&type=page&title=New%20Page&expand=body.storage
+GET https://jihugh.atlassian.net/wiki/rest/api/content?spaceKey=NS&type=page&title=Blocks&expand=body.storage
 Authorization: {{authorization}}
+
+###
+GET https://jihugh.atlassian.net/wiki/rest/api/content?spaceKey=NS&title=Blocks&expand=body.storage,version
 
 ###
 POST https://jihugh.atlassian.net/wiki/rest/api/content
