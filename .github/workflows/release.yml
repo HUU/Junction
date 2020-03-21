@@ -10,7 +10,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       with:
-        ref: ${{ GITHUB_SHA }}
+        ref: ${{ github.sha }}
     - uses: actions/setup-python@v1
       with:
         python-version: 3.8.2
