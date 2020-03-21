@@ -1,4 +1,4 @@
-![Junction, publish and manage Confluence with git workflows](/docs/logo.png?raw=true)
+![Junction, publish and manage Confluence with git workflows](https://github.com/HUU/Junction/raw/master/docs/logo.png?raw=true)
 
 With Junction you can write and manage your documentation directly in your codebase, using Markdown and your existing Git workflows (pull requests, code review, release branches, etc) and then automatically publish your changes to Confluence.  This gives you the best of both worlds: in-repo documentation that fits natively into your development workflows, with the discoverability and centrality of Confluence.
 
@@ -44,7 +44,7 @@ In your git repository, create a folder structure and markdown files you would l
     |   ├── Visual Studio Online.md
     |   ├── Atlassian Bamboo.md
     |   └── GitHub Actions.md
-    └── Credits.md  
+    └── Credits.md
 ```
 
 Junction is designed as a library, and also provides "helpers" that make using it in different contexts easy (in particularly, as part of automated workflows e.g. in post-push builds).
@@ -61,7 +61,7 @@ The CLI is fully documented, so make use of the `--help` option to navigate all 
 
 You can check what the `junction` CLI will do to your space without actually uploading the changes to Confluence by using the `--dry-run` flag.
 
-![Dry run example output](docs/dry_run_example.gif?raw=true)
+![Dry run example output](https://github.com/HUU/Junction/raw/master/docs/dry_run_example.gif?raw=true)
 
 ### Python Library
 
@@ -86,7 +86,7 @@ for delta in deltas:
 
 # Output Example
 
-The following markdown sample, stored in `Sample.md`, produces a page in Confluence that looks like [this](docs/example_output.png?raw=true).  This shows all of the major supported features and markup.  It is intentionally very similar to GitHub-style markdown, with some extensions and differences to account for Confluence-specific features.
+The following markdown sample, stored in `Sample.md`, produces a page in Confluence that looks like [this](https://github.com/HUU/Junction/blob/master/docs/example_output.png?raw=true).  This shows all of the major supported features and markup.  It is intentionally very similar to GitHub-style markdown, with some extensions and differences to account for Confluence-specific features.
 
     # Text
 
@@ -189,4 +189,4 @@ The following markdown sample, stored in `Sample.md`, produces a page in Conflue
 
 # Contributing
 
-This is a hobby project of mine, and I may not be able to work on it immediately upon request.   If you are interested in contributing, feel free to open a PR by following [the contribution guidelines](CONTRIBUTING.md).
+This is a hobby project of mine, and I may not be able to work on it immediately upon request.   If you are interested in contributing, feel free to open a PR by following [the contribution guidelines](https://github.com/HUU/Junction/blob/master/CONTRIBUTING.md).
