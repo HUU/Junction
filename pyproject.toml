@@ -45,9 +45,9 @@ black = "==19.10b0"
 flake8 = "^3.7.9"
 pre-commit = "^2.0.1"
 rope = "^0.16.0"
-pyflakes = {git = "https://github.com/pycqa/pyflakes"}
-pycodestyle = {git = "https://github.com/pycqa/pycodestyle"}
+pycodestyle = "^2.6.0"
 mypy = "^0.770"
+pyflakes = "^2.2.0"
 
 [tool.poetry.scripts]
 junction = "junction.cli:main"
