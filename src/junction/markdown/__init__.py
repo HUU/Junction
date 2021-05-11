@@ -10,6 +10,7 @@ from mdx_subscript import SubscriptExtension
 from mdx_emdash import EmDashExtension
 from mdx_urlize import UrlizeExtension
 
+from junction.markdown.checklists import ChecklistExtension
 from junction.markdown.codeblocks import CodeBlockExtension
 from junction.markdown.status import StatusExtension
 from junction.markdown.toc import TableOfContentsExtension
@@ -28,6 +29,7 @@ junctionMarkdown = Markdown(
         SubscriptExtension(),
         EmDashExtension(),
         UrlizeExtension(),
+        ChecklistExtension(),
         CodeBlockExtension(),
         StatusExtension(),
         TableOfContentsExtension(),
