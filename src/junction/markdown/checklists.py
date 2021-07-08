@@ -9,7 +9,7 @@ from markdown.postprocessors import Postprocessor
 class ChecklistExtension(Extension):
     def extendMarkdown(self, md: Markdown) -> None:
         postprocessor = ChecklistPostprocessor(md)
-        md.postprocessors.add('checklist', postprocessor, '>raw_html')
+        md.postprocessors.add("checklist", postprocessor, ">raw_html")
 
 
 class ChecklistPostprocessor(Postprocessor):
@@ -20,13 +20,17 @@ class ChecklistPostprocessor(Postprocessor):
     - [x] A completed task
     """
 
-    item_with_children_pattern = re.compile(r'<li>\[([ Xx])\]((?!</li>).*)<ul>', re.MULTILINE)
-    item_paragraph_pattern = re.compile(r'<p>\[([ Xx])\](.*)</p>', re.MULTILINE)
-    item_pattern = re.compile(r'<li>\[([ Xx])\](.*)</li>', re.MULTILINE)
+    item_with_children_pattern = re.compile(
+        r"<li>\[([ Xx])\]((?!</li>).*)<ul>", re.MULTILINE
+    )
+    item_paragraph_pattern = re.compile(r"<p>\[([ Xx])\](.*)</p>", re.MULTILINE)
+    item_pattern = re.compile(r"<li>\[([ Xx])\](.*)</li>", re.MULTILINE)
 
     def run(self, html: str) -> str:
         # Converts nested lists that start with a task
-        html = re.sub(self.item_with_children_pattern, self._convert_item_with_children, html)
+        html = re.sub(
+            self.item_with_children_pattern, self._convert_item_with_children, html
+        )
         # Converts paragraphs with the task syntax, in case the HTML parser created an extra line
         html = re.sub(self.item_paragraph_pattern, self._convert_item, html)
         # Converts regular list items
@@ -39,7 +43,7 @@ class ChecklistPostprocessor(Postprocessor):
         as the task ID
         """
         state, caption = match.groups()
-        return render_item(caption, state != ' ', match.start())
+        return render_item(caption, state != " ", match.start())
 
     def _convert_item_with_children(self, match: re.Match) -> str:
         """
@@ -47,11 +51,11 @@ class ChecklistPostprocessor(Postprocessor):
         as the task ID
         """
         state, caption = match.groups()
-        return render_item(caption, state != ' ', match.start()) + "<ul><li>"
+        return render_item(caption, state != " ", match.start()) + "<ul><li>"
 
 
 def render_item(caption: str, checked: bool, task_id: int) -> str:
-    status = 'complete' if checked else 'incomplete'
+    status = "complete" if checked else "incomplete"
     return f"""<ac:task-list>
 <ac:task>
 <ac:task-id>{task_id}</ac:task-id>
