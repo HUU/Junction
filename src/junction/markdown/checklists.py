@@ -1,5 +1,5 @@
 import re
-from typing import List, Any
+from typing import Any
 
 from markdown import Markdown
 from markdown.extensions import Extension
