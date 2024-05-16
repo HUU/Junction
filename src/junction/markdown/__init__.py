@@ -5,13 +5,14 @@ from typing import Union, Optional
 from markdown import Markdown
 from markdown.extensions.sane_lists import SaneListExtension
 from markdown.extensions.tables import TableExtension
-from mdx_superscript import SuperscriptExtension
-from mdx_subscript import SubscriptExtension
-from mdx_emdash import EmDashExtension
-from mdx_urlize import UrlizeExtension
+from pymdownx.caret import InsertSupExtension
+from pymdownx.magiclink import MagiclinkExtension
+from pymdownx.superfences import SuperFencesCodeExtension
+from pymdownx.tilde import DeleteSubExtension
 
 from junction.markdown.checklists import ChecklistExtension
-from junction.markdown.codeblocks import CodeBlockExtension
+from junction.markdown.codeblocks import confluence_code_format
+from junction.markdown.emdash import EmDashExtension
 from junction.markdown.status import StatusExtension
 from junction.markdown.toc import TableOfContentsExtension
 from junction.markdown.children import ChildrenExtension
@@ -25,12 +26,16 @@ logger = logging.getLogger(__name__)
 junctionMarkdown = Markdown(
     extensions=[
         SaneListExtension(),
-        SuperscriptExtension(),
-        SubscriptExtension(),
+        InsertSupExtension(),
+        DeleteSubExtension(),
         EmDashExtension(),
-        UrlizeExtension(),
+        MagiclinkExtension(),
         ChecklistExtension(),
-        CodeBlockExtension(),
+        SuperFencesCodeExtension(
+            custom_fences=[
+                {"name": "*", "class": "*", "format": confluence_code_format}
+            ]
+        ),
         StatusExtension(),
         TableOfContentsExtension(),
         ChildrenExtension(),

@@ -50,4 +50,5 @@ class DotDict(OrderedDict):
         except KeyError as ex:
             raise AttributeError(f"No attribute called: {k}") from ex
 
-    __setattr__ = OrderedDict.__setitem__
+    def __setattr__(self, name: str, value: Any) -> None:
+        self[name] = value

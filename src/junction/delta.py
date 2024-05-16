@@ -61,7 +61,8 @@ class PageAction(ABC):
 
     Page actions should attempt to be somewhat replayable.  This ensures if Junction fails while executing a Delta that it can simply
     be re-run.  This isn't quite full idempotency as some actions are inherently un-idempotent.  This could be changed to full idempotency
-    if index pages were made explicit (via the git/Modification API) rather than implicit as needed by a particular page action."""
+    if index pages were made explicit (via the git/Modification API) rather than implicit as needed by a particular page action.
+    """
 
     def __init__(self, title: str):
         self.title = title
@@ -147,9 +148,11 @@ class MovePage(PageAction):
                 title=self.new_title,
                 type="page",
                 version=Version(
-                    number=old_page.version.number + 1
-                    if old_page.version and old_page.version.number
-                    else 2
+                    number=(
+                        old_page.version.number + 1
+                        if old_page.version and old_page.version.number
+                        else 2
+                    )
                 ),
                 ancestors=[Content(id=parent.id)] if parent else None,
             )
@@ -337,13 +340,17 @@ class UpdatePage(PageAction):
                 title=self.title,
                 type="page",
                 version=Version(
-                    number=existing.version.number + 1
-                    if existing.version and existing.version.number
-                    else 2
+                    number=(
+                        existing.version.number + 1
+                        if existing.version and existing.version.number
+                        else 2
+                    )
                 ),
-                ancestors=[Content(id=existing.ancestors[-1].id)]
-                if existing.ancestors
-                else [],
+                ancestors=(
+                    [Content(id=existing.ancestors[-1].id)]
+                    if existing.ancestors
+                    else []
+                ),
                 body=Body(
                     storage=ContentBody(value=self.new_body, representation="storage")
                 ),

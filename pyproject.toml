@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "confluence-junction"
-version = "0.1.1"
+version = "0.1.2"
 description = "Publish to and manage Confluence spaces with markdown files tracked in Git."
 authors = ["HUU <readabook123@protonmail.com>"]
 license = "MIT"
@@ -28,25 +28,24 @@ packages = [
 [tool.poetry.dependencies]
 python = "^3.8"
 requests = "^2.22.0"
-markdown = "^3.0.1"
-markdownsuperscript = "^2.1.1"
-markdownsubscript = "^2.1.1"
-markdown-urlize = "^0.2.0"
-markdown-emdash = "^0.1.0"
+markdown = "^3.6"
 gitpython = "^3.0.5"
-click = "^7.0"
+click = "^8.0"
 click-log = "^0.3.2"
 colorama = "^0.4.3"
+pymdown-extensions = "^10.8.1"
 
 [tool.poetry.dev-dependencies]
 ipykernel = "^5.1.4"
 notebook = "^6.0.3"
-black = "==19.10b0"
+black = "^24.4.2"
 flake8 = "^3.7.9"
 pre-commit = "^2.0.1"
 rope = "^0.16.0"
+types-markdown = "^3.6.0.20240316"
+types-requests = "^2.31.0.20240406"
 pycodestyle = "^2.6.0"
-mypy = "^0.770"
+mypy = "^0.982"
 pyflakes = "^2.2.0"
 
 [tool.poetry.scripts]

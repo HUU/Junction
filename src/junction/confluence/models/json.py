@@ -87,9 +87,11 @@ class ApiDecoder(Generic[T]):
                     setattr(
                         new_obj,
                         key,
-                        value
-                        if not issubclass(value.__class__, Mapping)
-                        else DotDict(value),
+                        (
+                            value
+                            if not issubclass(value.__class__, Mapping)
+                            else DotDict(value)
+                        ),
                     )
                 else:
                     setattr(
@@ -98,7 +100,7 @@ class ApiDecoder(Generic[T]):
         return new_obj
 
     def __marshal_hinted_class(self, value: Any, hint: Any) -> Any:
-        if get_origin(hint) is Union and (hint_args := get_args(hint))[1] is NoneType:  # type: ignore
+        if get_origin(hint) is Union and (hint_args := get_args(hint))[1] is NoneType:
             # this is an Optional[T]..unwrap the real type:
             hint = hint_args[0]
         elif hasattr(hint, "__bound__"):

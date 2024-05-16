@@ -8,8 +8,8 @@ from markdown.postprocessors import Postprocessor
 
 class ChecklistExtension(Extension):
     def extendMarkdown(self, md: Markdown) -> None:
-        postprocessor = ChecklistPostprocessor(md)
-        md.postprocessors.add("checklist", postprocessor, ">raw_html")
+        md.registerExtension(self)
+        md.postprocessors.register(ChecklistPostprocessor(md), "checklist", 25)
 
 
 class ChecklistPostprocessor(Postprocessor):

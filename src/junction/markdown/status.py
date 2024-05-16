@@ -7,7 +7,7 @@ import re
 
 
 class StatusExtension(Extension):
-    """ Markdown extension that generates Confluence status macros (the little colored pills).
+    """Markdown extension that generates Confluence status macros (the little colored pills).
     Supports red, yellow, green, grey, blue, and purple.  Some examples:
     ```
     Milestone 1 &status-green:Complete;
@@ -17,12 +17,12 @@ class StatusExtension(Extension):
     """
 
     def extendMarkdown(self, md: Markdown) -> None:
-        md.inlinePatterns.add("status-red", StatusPattern("red"), "<reference")
-        md.inlinePatterns.add("status-yellow", StatusPattern("yellow"), "<reference")
-        md.inlinePatterns.add("status-green", StatusPattern("green"), "<reference")
-        md.inlinePatterns.add("status-grey", StatusPattern("grey"), "<reference")
-        md.inlinePatterns.add("status-purple", StatusPattern("purple"), "<reference")
-        md.inlinePatterns.add("status-blue", StatusPattern("blue"), "<reference")
+        md.inlinePatterns.register(StatusPattern("red"), "status-red", 25)
+        md.inlinePatterns.register(StatusPattern("yellow"), "status-yellow", 25)
+        md.inlinePatterns.register(StatusPattern("green"), "status-green", 25)
+        md.inlinePatterns.register(StatusPattern("grey"), "status-grey", 25)
+        md.inlinePatterns.register(StatusPattern("purple"), "status-purple", 25)
+        md.inlinePatterns.register(StatusPattern("blue"), "status-blue", 25)
 
 
 class StatusPattern(InlineProcessor):
@@ -30,7 +30,9 @@ class StatusPattern(InlineProcessor):
         self._color = color
         super().__init__(r"&status-{}:(?P<title>[^;]+);".format(self._color))
 
-    def handleMatch(self, match: re.Match, data: str) -> Tuple[etree.Element, int, int]:
+    def handleMatch(  # type: ignore
+        self, match: re.Match[str], data: str
+    ) -> Tuple[etree.Element, int, int]:
         el = etree.Element(
             "ac:structured-macro",
             {
@@ -43,9 +45,9 @@ class StatusPattern(InlineProcessor):
         etree.SubElement(el, "ac:parameter", {"ac:name": "title"}).text = match.group(
             "title"
         )
-        etree.SubElement(
-            el, "ac:parameter", {"ac:name": "colour"}
-        ).text = self._color.capitalize()
+        etree.SubElement(el, "ac:parameter", {"ac:name": "colour"}).text = (
+            self._color.capitalize()
+        )
 
         return el, match.start(0), match.end(0)
 

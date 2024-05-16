@@ -342,9 +342,9 @@ class Content(ApiModel):
     space: Optional[Space] = None
     history: Optional["ContentHistory"] = None
     version: Optional["Version"] = None
-    ancestors: Optional[
-        List["ContentPage"]
-    ] = None  # this really isn't the right type, but in 99% cases it is and it makes the type checker quiet down
+    ancestors: Optional[List["ContentPage"]] = (
+        None  # this really isn't the right type, but in 99% cases it is and it makes the type checker quiet down
+    )
     operations: Optional[List[OperationCheckResult]] = None
     children: Optional["ContentChildren"] = None
     childTypes: Optional["ContentChildType"] = None

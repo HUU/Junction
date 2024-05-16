@@ -13,14 +13,14 @@ class WikiLinkExtension(Extension):
     """
 
     def extendMarkdown(self, md: Markdown) -> None:
-        md.inlinePatterns.add("wiki-link", WikiLinkPattern(md), "<reference")
+        md.inlinePatterns.register(WikiLinkPattern(md), "wiki-link", 25)
 
 
 class WikiLinkPattern(LinkInlineProcessor):
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(r"\&\[", *args, **kwargs)
 
-    def handleMatch(
+    def handleMatch(  # type: ignore
         self, m: re.Match, data: str
     ) -> Tuple[Optional[etree.Element], Optional[int], Optional[int]]:
         text, index, handled = self.getText(data, m.end(0))

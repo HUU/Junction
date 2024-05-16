@@ -155,6 +155,11 @@ def delta(
     of [BRANCH] i.e. you can get from SINCE to the HEAD of [BRANCH].
     """
 
+    if my_ctx.repo is None:
+        raise click.BadParameter(
+            "junction must be run from within a git repository, or git-dir must point to a git repository"
+        )
+
     filter_path = Path(content_path) if content_path else git_dir
     commits = find_commits_on_branch_after(branch, since, my_ctx.repo)
     deltas = {

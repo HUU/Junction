@@ -1,7 +1,7 @@
 # Text
 
 It's very easy to make some words **bold** and other words *italic* with Markdown. You can even [link to Google!](http://google.com).
-Even some fancy formats like Subscripts~with tilde~ and Superscripts^with caret^.
+Even some fancy formats like Subscripts with~tilde~ and Superscripts with^caret^....just make sure to escape^any\ spaces^.
 
 # Lists
 
@@ -22,6 +22,12 @@ Alternatively,
 - And if you have sub points, put four spaces before the dash or star:
     - Like this
     - And this
+
+We even support checklists
+
+* [ ] Eggs
+* [ ] Milk
+  * [x] Bread
 
 # Headers
 
@@ -45,6 +51,7 @@ code, use "code fencing":
 
 ```
 if (isAwesome){
+  console.log(`nested ticks and ${special} characters`)
   return true
 }
 ```

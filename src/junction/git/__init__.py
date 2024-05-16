@@ -73,8 +73,8 @@ class ModificationType(Enum):
 
 
 class Modification:
-    """ Represents a modification to the filesystem.  This is used to abstract the details of git from other subsystems that consume information
-    about changes such as the Delta API. """
+    """Represents a modification to the filesystem.  This is used to abstract the details of git from other subsystems that consume information
+    about changes such as the Delta API."""
 
     def __init__(
         self,
@@ -143,8 +143,15 @@ class Modification:
         change_type = Modification._determine_modification_type(diff)
 
         tree_path = new_path if new_path else old_path
+
         source_code = (
-            tree[tree_path].data_stream.read()
+            tree[
+                (
+                    tree_path
+                    if tree_path
+                    else "this should not be possible make mypy happy"
+                )
+            ].data_stream.read()
             if change_type != ModificationType.DELETE
             else None
         )
@@ -211,12 +218,16 @@ def filter_modifications_to_folder(
                 modification_type = mod.change_type
 
             yield Modification(
-                mod.previous_path.relative_to(folder)
-                if mod.previous_path and old_path_in_folder
-                else None,
-                mod.path.relative_to(folder)
-                if mod.path and new_path_in_folder
-                else None,
+                (
+                    mod.previous_path.relative_to(folder)
+                    if mod.previous_path and old_path_in_folder
+                    else None
+                ),
+                (
+                    mod.path.relative_to(folder)
+                    if mod.path and new_path_in_folder
+                    else None
+                ),
                 modification_type,
                 mod.source_code,
             )

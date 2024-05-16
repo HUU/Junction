@@ -124,13 +124,19 @@ class _ApiClient(object):
             data = self.__json_encoder.encode(body)
             logger.debug(data)
             response = requests.post(
-                url, data=data, auth=self.basic_auth, headers=headers,
+                url,
+                data=data,
+                auth=self.basic_auth,
+                headers=headers,
             )
         elif method == "PUT":
             data = self.__json_encoder.encode(body)
             logger.debug(data)
             response = requests.put(
-                url, data=data, auth=self.basic_auth, headers=headers,
+                url,
+                data=data,
+                auth=self.basic_auth,
+                headers=headers,
             )
         elif method == "DELETE":
             response = requests.delete(url, auth=self.basic_auth, headers=headers)
